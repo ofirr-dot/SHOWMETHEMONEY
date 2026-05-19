@@ -1,30 +1,49 @@
+/* ===== בסיס כללי ===== */
+
 body {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  color: #222;
+  font-family: "Assistant", Arial, sans-serif;
+  background: #f2f4f7;
+  color: #1a1a1a;
   margin: 0;
   padding: 0;
   direction: rtl;
 }
 
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.page {
+  padding: 25px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* ===== תפריט עליון ===== */
+
 .top-nav {
   background: #ffffff;
-  border-bottom: 1px solid #ddd;
-  padding: 10px 20px;
+  border-bottom: 1px solid #e3e6ea;
+  padding: 12px 25px;
   display: flex;
   gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .nav-item {
   text-decoration: none;
-  color: #444;
-  font-weight: bold;
-  padding: 8px 12px;
-  border-radius: 6px;
+  color: #4a4a4a;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: 0.2s;
 }
 
 .nav-item:hover {
-  background: #eaeaea;
+  background: #e8eef5;
 }
 
 .nav-item.active {
@@ -32,105 +51,122 @@ body {
   color: white;
 }
 
-.page {
-  padding: 20px;
-}
+/* ===== כותרת דף ===== */
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 15px;
-}
-
-.page-header h1 {
-  margin: 0;
+  margin-bottom: 25px;
 }
 
 .page-subtitle {
-  color: #666;
-  font-size: 13px;
+  color: #6d6d6d;
+  font-size: 14px;
 }
+
+/* ===== כרטיסים ===== */
 
 .cards-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 25px;
 }
 
 .card {
   background: #ffffff;
-  border-radius: 10px;
-  padding: 12px 14px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
 }
 
 .card-title {
-  font-size: 12px;
-  color: #777;
-  margin-bottom: 4px;
+  font-size: 13px;
+  color: #7a7a7a;
+  margin-bottom: 6px;
 }
 
 .card-main {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 
 .card-sub {
-  font-size: 12px;
+  font-size: 13px;
   color: #555;
 }
 
 .card-positive {
   color: #0a8a2a;
-  font-weight: bold;
 }
+
+.card-negative {
+  color: #c0392b;
+}
+
+/* ===== טבלאות ===== */
 
 .table-wrapper {
   background: #ffffff;
-  border-radius: 10px;
-  padding: 10px;
-  border: 1px solid #e5e5e5;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-radius: 14px;
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-}
-
-th, td {
-  padding: 6px 8px;
-  border-bottom: 1px solid #eee;
-  text-align: center;
-  white-space: nowrap;
+  font-size: 13px;
 }
 
 th {
-  background: #fafafa;
-  font-weight: bold;
+  background: #f7f9fb;
+  padding: 10px;
+  font-weight: 700;
+  border-bottom: 2px solid #e3e6ea;
+  white-space: nowrap;
 }
 
-tr:nth-child(even) td {
-  background: #fcfcfc;
+td {
+  padding: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+
+tr:hover td {
+  background: #f5faff;
 }
 
 .value-positive {
   color: #0a8a2a;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .value-negative {
   color: #c0392b;
-  font-weight: bold;
+  font-weight: 700;
 }
 
-@media (max-width: 900px) {
-  .cards-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ===== מובייל ===== */
+
+@media (max-width: 700px) {
+  .page {
+    padding: 15px;
+  }
+
+  .top-nav {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 }
