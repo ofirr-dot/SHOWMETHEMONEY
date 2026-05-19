@@ -4,17 +4,22 @@
   <meta charset="UTF-8">
   <title>FAIR – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body>
+<body class="theme-fair">
 
+  <!-- כפתור מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <!-- ניווט עליון -->
   <nav class="top-nav">
-    <a href="index.html" class="nav-item">סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item">IBKR</a>
-    <a href="fair.html" class="nav-item active">FAIR</a>
-    <a href="banks.html" class="nav-item">בנקים</a>
-    <a href="hishtalmut.html" class="nav-item">קרן השתלמות</a>
-    <a href="kids.html" class="nav-item">חיסכון לכל ילד</a>
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item active"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
 
   <div class="page">
@@ -54,6 +59,14 @@
 
     </div>
 
+    <!-- גרף עמודות -->
+    <div class="cards-row">
+      <div class="card" style="padding:25px;">
+        <h3 style="margin-bottom:15px;">ביצועי הקרנות</h3>
+        <canvas id="fairChart" height="120"></canvas>
+      </div>
+    </div>
+
     <!-- טבלה -->
     <div class="table-wrapper">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -83,10 +96,89 @@
   </div>
 
   <script>
-    // כרגע אין API ל-FAIR, אז נשים נתוני דמו עד שתחבר מקור נתונים
+    // נתוני דמו עד שיהיה API אמיתי
     const fairDemoData = [
       { name: "מורכב 4A וונט", type: "אג\"ח", qty: 1200, value: 64613, pl: 212019, yield: 45.15 },
       { name: "IBI הלוואות 125", type: "הלוואות", qty: 300, value: 18000, pl: 6000, yield: 33.3 },
       { name: "הראל הלוואות 35", type: "הלוואות", qty: 500, value: 22000, pl: 8000, yield: 36.3 },
       { name: "IBI אג\"ח ביטוח", type: "אג\"ח", qty: 900, value: 31000, pl: 9000, yield: 29.0 },
-      {
+      { name: "אלטשולר מחקה מולטי סקטור", type: "מחקה", qty: 1500, value: 45000, pl: 15000, yield: 33.3 }
+    ];
+
+    function format(n) {
+      return Number(n).toLocaleString("he-IL");
+    }
+
+    function loadFAIR() {
+      document.getElementById("fair-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const tbody = document.getElementById("fair-table-body");
+      tbody.innerHTML = "";
+
+      let totalValue = 0;
+      let totalPL = 0;
+
+      fairDemoData.forEach(f => {
+        totalValue += f.value;
+        totalPL += f.pl;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${f.name}</td>
+          <td>${f.type}</td>
+          <td>${format(f.qty)}</td>
+          <td>₪${format(f.value)}</td>
+          <td class="${f.pl >= 0 ? 'value-positive' : 'value-negative'}">
+            ${f.pl >= 0 ? '+' : ''}₪${format(f.pl)}
+          </td>
+          <td>${f.yield}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("fair-funds-count").innerText = fairDemoData.length;
+      document.getElementById("fair-total-value").innerText = "₪" + format(totalValue);
+      document.getElementById("fair-total-pl").innerText = "₪" + format(totalPL);
+      document.getElementById("fair-total-pl-pct").innerText =
+        ((totalPL / (totalValue - totalPL)) * 100).toFixed(2) + "%";
+      document.getElementById("fair-total-yield").innerText =
+        ((totalPL / (totalValue - totalPL)) * 100).toFixed(2) + "%";
+
+      // גרף עמודות
+      new Chart(document.getElementById("fairChart"), {
+        type: "bar",
+        data: {
+          labels: fairDemoData.map(f => f.name),
+          datasets: [{
+            label: "שווי נוכחי (₪)",
+            data: fairDemoData.map(f => f.value),
+            backgroundColor: "#6A4FF7"
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // מצב כהה/בהיר
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+
+    // Header דינמי
+    window.addEventListener("scroll", () => {
+      const nav = document.querySelector(".top-nav");
+      if (window.scrollY > 40) nav.classList.add("shrink");
+      else nav.classList.remove("shrink");
+    });
+
+    loadFAIR();
+  </script>
+
+</body>
+</html>
