@@ -2,12 +2,12 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>בנקים – Show Me The Money</title>
+  <title>קרן השתלמות – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-banks">
+<body class="theme-hishtalmut">
 
   <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
@@ -17,8 +17,8 @@
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item active"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="hishtalmut.html" class="nav-item active"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
 
@@ -27,8 +27,8 @@
     <!-- כותרת -->
     <div class="page-header">
       <div>
-        <h1>בנקים</h1>
-        <div class="page-subtitle" id="banks-timestamp"></div>
+        <h1>קרן השתלמות</h1>
+        <div class="page-subtitle" id="hishtalmut-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
@@ -37,23 +37,24 @@
     <div class="cards-row">
 
       <div class="card">
-        <div class="card-title">סה״כ מזומן (₪)</div>
-        <div class="card-main" id="banks-total-cash-ils">₪0</div>
+        <div class="card-title">שווי נוכחי</div>
+        <div class="card-main" id="hishtalmut-total-value">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">סה״כ מזומן ($)</div>
-        <div class="card-main" id="banks-total-cash-usd">$0</div>
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="hishtalmut-total-pl">₪0</div>
+        <div class="card-sub" id="hishtalmut-total-pl-pct">0%</div>
       </div>
 
       <div class="card">
-        <div class="card-title">מספר חשבונות</div>
-        <div class="card-main" id="banks-accounts-count">0</div>
+        <div class="card-title">תשואה ממוצעת</div>
+        <div class="card-main" id="hishtalmut-total-yield">0%</div>
       </div>
 
       <div class="card">
-        <div class="card-title">שער דולר</div>
-        <div class="card-main" id="banks-usd-rate">0.00</div>
+        <div class="card-title">מספר הפקדות</div>
+        <div class="card-main" id="hishtalmut-deposits-count">0</div>
       </div>
 
     </div>
@@ -61,30 +62,31 @@
     <!-- גרף -->
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות לפי חשבון</h3>
-        <canvas id="banks-chart" height="120"></canvas>
+        <h3 style="margin-bottom:15px;">ביצועים לאורך זמן</h3>
+        <canvas id="hishtalmut-chart" height="120"></canvas>
       </div>
     </div>
 
     <!-- טבלה -->
     <div class="table-wrapper">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h2 style="font-size:16px;margin:0;">חשבונות בנק</h2>
-        <span class="table-caption">נתוני בנקים כפי שמופיעים במערכת</span>
+        <h2 style="font-size:16px;margin:0;">הפקדות</h2>
+        <span class="table-caption">נתוני קרן השתלמות</span>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>שם חשבון</th>
-            <th>יתרה (₪)</th>
-            <th>יתרה ($)</th>
-            <th>בנק</th>
+            <th>תאריך</th>
+            <th>סכום הפקדה</th>
+            <th>שווי נוכחי</th>
+            <th>רווח</th>
+            <th>תשואה</th>
           </tr>
         </thead>
 
-        <tbody id="banks-table-body">
-          <tr><td colspan="4">טוען נתונים…</td></tr>
+        <tbody id="hishtalmut-table-body">
+          <tr><td colspan="5">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
@@ -94,62 +96,68 @@
 
   <script>
     // נתוני דמו עד שיהיה API אמיתי
-    const banksData = [
-      { name: "Chase Savings", ils: 44453, usd: 12000, bank: "Chase" },
-      { name: "Chase Checking", ils: 50931, usd: 0, bank: "Chase" },
-      { name: "בנק הפועלים", ils: 40187, usd: 0, bank: "Hapoalim" }
+    const hishtalmutData = [
+      { date: "2023-01-01", deposit: 10000, value: 14800 },
+      { date: "2023-06-01", deposit: 10000, value: 14500 },
+      { date: "2024-01-01", deposit: 10000, value: 15000 }
     ];
-
-    const banksUsdRate = 3.65;
 
     function format(n) {
       return Number(n).toLocaleString("he-IL");
     }
 
-    function loadBanks() {
-      document.getElementById("banks-timestamp").innerText =
+    function loadHishtalmut() {
+      document.getElementById("hishtalmut-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const tbody = document.getElementById("banks-table-body");
+      const tbody = document.getElementById("hishtalmut-table-body");
       tbody.innerHTML = "";
 
-      let totalILS = 0;
-      let totalUSD = 0;
+      let totalValue = 0;
+      let totalDeposits = 0;
 
-      banksData.forEach(acc => {
-        totalILS += acc.ils;
-        totalUSD += acc.usd;
+      hishtalmutData.forEach(row => {
+        const pl = row.value - row.deposit;
+        const pct = (pl / row.deposit) * 100;
+
+        totalValue += row.value;
+        totalDeposits += row.deposit;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${acc.name}</td>
-          <td>₪${format(acc.ils)}</td>
-          <td>$${format(acc.usd)}</td>
-          <td>${acc.bank}</td>
+          <td>${row.date}</td>
+          <td>₪${format(row.deposit)}</td>
+          <td>₪${format(row.value)}</td>
+          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
+            ${pl >= 0 ? '+' : ''}₪${format(pl)}
+          </td>
+          <td>${pct.toFixed(2)}%</td>
         `;
         tbody.appendChild(tr);
       });
 
-      document.getElementById("banks-total-cash-ils").innerText = "₪" + format(totalILS);
-      document.getElementById("banks-total-cash-usd").innerText = "$" + format(totalUSD);
-      document.getElementById("banks-accounts-count").innerText = banksData.length;
-      document.getElementById("banks-usd-rate").innerText = banksUsdRate.toFixed(2);
+      const totalPL = totalValue - totalDeposits;
+      const totalPct = (totalPL / totalDeposits) * 100;
+
+      document.getElementById("hishtalmut-total-value").innerText = "₪" + format(totalValue);
+      document.getElementById("hishtalmut-total-pl").innerText =
+        (totalPL >= 0 ? "+" : "") + "₪" + format(totalPL);
+      document.getElementById("hishtalmut-total-pl-pct").innerText = totalPct.toFixed(2) + "%";
+      document.getElementById("hishtalmut-total-yield").innerText = totalPct.toFixed(2) + "%";
+      document.getElementById("hishtalmut-deposits-count").innerText = hishtalmutData.length;
 
       // גרף
-      new Chart(document.getElementById("banks-chart"), {
-        type: "bar",
+      new Chart(document.getElementById("hishtalmut-chart"), {
+        type: "line",
         data: {
-          labels: banksData.map(x => x.name),
+          labels: hishtalmutData.map(x => x.date),
           datasets: [{
-            label: "יתרה (₪)",
-            data: banksData.map(x => x.ils),
-            backgroundColor: "#00A8A8"
+            label: "שווי נוכחי (₪)",
+            data: hishtalmutData.map(x => x.value),
+            borderColor: "#FF8A3D",
+            backgroundColor: "rgba(255,138,61,0.25)",
+            tension: 0.3
           }]
-        },
-        options: {
-          plugins: {
-            legend: { display: false }
-          }
         }
       });
     }
@@ -167,7 +175,7 @@
       else nav.classList.remove("shrink");
     });
 
-    loadBanks();
+    loadHishtalmut();
   </script>
 
 </body>
