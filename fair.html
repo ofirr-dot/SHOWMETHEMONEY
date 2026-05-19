@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>FAIR – Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item">סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item">IBKR</a>
+    <a href="fair.html" class="nav-item active">FAIR</a>
+    <a href="banks.html" class="nav-item">בנקים</a>
+    <a href="hishtalmut.html" class="nav-item">קרן השתלמות</a>
+    <a href="kids.html" class="nav-item">חיסכון לכל ילד</a>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>FAIR – קרנות</h1>
+        <div class="page-subtitle" id="fair-timestamp"></div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-title">מספר קרנות</div>
+        <div class="card-main" id="fair-funds-count">0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">שווי FAIR</div>
+        <div class="card-main" id="fair-total-value">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="fair-total-pl">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">תשואה כוללת</div>
+        <div class="card-main" id="fair-total-yield">0%</div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>שם הקרן</th>
+            <th>סוג</th>
+            <th>כמות</th>
+            <th>שווי נוכחי</th>
+            <th>רווח/הפסד</th>
+            <th>תשואה</th>
+          </tr>
+        </thead>
+        <tbody id="fair-table-body">
+          <tr><td colspan="6">נתוני FAIR יתחברו בהמשך</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("fair-timestamp").innerText =
+      new Date().toLocaleString("he-IL");
+  </script>
+
+</body>
+</html>
