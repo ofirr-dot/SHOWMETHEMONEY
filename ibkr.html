@@ -9,10 +9,10 @@
 
 <body class="theme-ibkr">
 
-  <!-- כפתור מצב כהה/בהיר -->
+  <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- ניווט עליון -->
+  <!-- ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
@@ -33,19 +33,19 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- כרטיסי סיכום -->
+    <!-- כרטיסים -->
     <div class="cards-row">
 
       <div class="card">
-        <div class="card-title">רווח חופשי (₪)</div>
-        <div class="card-main card-positive" id="ibkr-free-pl-ils">₪0</div>
-        <div class="card-sub" id="ibkr-free-pl-usd">$0</div>
+        <div class="card-title">שווי נוכחי (₪)</div>
+        <div class="card-main" id="ibkr-total-value-ils">₪0</div>
+        <div class="card-sub" id="ibkr-total-value-usd">$0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">שווי נוכחי</div>
-        <div class="card-main" id="ibkr-equity-ils">₪0</div>
-        <div class="card-sub" id="ibkr-equity-usd">$0</div>
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="ibkr-total-pl-ils">₪0</div>
+        <div class="card-sub" id="ibkr-total-pl-usd">$0</div>
       </div>
 
       <div class="card">
@@ -61,11 +61,11 @@
 
     </div>
 
-    <!-- גרף ביצועים -->
+    <!-- גרף -->
     <div class="cards-row">
       <div class="card" style="padding:25px;">
         <h3 style="margin-bottom:15px;">ביצועי IBKR</h3>
-        <canvas id="ibkrChart" height="120"></canvas>
+        <canvas id="ibkr-chart" height="120"></canvas>
       </div>
     </div>
 
@@ -112,9 +112,8 @@
     }
 
     function setTimestamp() {
-      const now = new Date();
       document.getElementById("ibkr-timestamp").innerText =
-        now.toLocaleString("he-IL");
+        new Date().toLocaleString("he-IL");
     }
 
     async function loadIBKR() {
@@ -129,8 +128,8 @@
       const tbody = document.getElementById("ibkr-table-body");
       tbody.innerHTML = "";
 
-      let totalEquityUSD = 0;
-      let totalEquityILS = 0;
+      let totalValueUSD = 0;
+      let totalValueILS = 0;
       let totalPLUSD = 0;
       let totalPLILS = 0;
 
@@ -142,8 +141,8 @@
         const plUSD = value - cost;
         const plILS = plUSD * fx;
 
-        totalEquityUSD += value;
-        totalEquityILS += value * fx;
+        totalValueUSD += value;
+        totalValueILS += value * fx;
         totalPLUSD += plUSD;
         totalPLILS += plILS;
 
@@ -170,21 +169,21 @@
       });
 
       cash.forEach(c => {
-        totalEquityILS += Number(c.endingCash) * Number(c.fxRateToBase);
+        totalValueILS += Number(c.endingCash) * Number(c.fxRateToBase);
       });
 
-      document.getElementById("ibkr-equity-usd").innerText = "$" + format(totalEquityUSD);
-      document.getElementById("ibkr-equity-ils").innerText = "₪" + format(totalEquityILS);
+      document.getElementById("ibkr-total-value-usd").innerText = "$" + format(totalValueUSD);
+      document.getElementById("ibkr-total-value-ils").innerText = "₪" + format(totalValueILS);
 
-      document.getElementById("ibkr-free-pl-usd").innerText =
+      document.getElementById("ibkr-total-pl-usd").innerText =
         "$" + (totalPLUSD >= 0 ? "+" : "") + format(totalPLUSD);
-      document.getElementById("ibkr-free-pl-ils").innerText =
+      document.getElementById("ibkr-total-pl-ils").innerText =
         "₪" + (totalPLILS >= 0 ? "+" : "") + format(totalPLILS);
 
       document.getElementById("ibkr-positions-count").innerText = positions.length;
 
-      // גרף ביצועים
-      new Chart(document.getElementById("ibkrChart"), {
+      // גרף
+      new Chart(document.getElementById("ibkr-chart"), {
         type: "line",
         data: {
           labels: positions.map(p => p.symbol),
@@ -204,7 +203,7 @@
       });
     }
 
-    // מצב כהה/בהיר
+    // מצב כהה
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
       themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
