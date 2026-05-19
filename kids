@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>חיסכון לכל ילד – Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item">סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item">IBKR</a>
+    <a href="fair.html" class="nav-item">FAIR</a>
+    <a href="banks.html" class="nav-item">בנקים</a>
+    <a href="hishtalmut.html" class="nav-item">קרן השתלמות</a>
+    <a href="kids.html" class="nav-item active">חיסכון לכל ילד</a>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>חיסכון לכל ילד</h1>
+        <div class="page-subtitle" id="kids-timestamp"></div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>שם</th>
+            <th>שווי נוכחי</th>
+            <th>רווח/הפסד</th>
+            <th>תשואה</th>
+            <th>תאריך עדכון</th>
+          </tr>
+        </thead>
+        <tbody id="kids-table-body">
+          <tr><td colspan="5">נתוני חיסכון לכל ילד יתחברו בהמשך</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("kids-timestamp").innerText =
+      new Date().toLocaleString("he-IL");
+  </script>
+
+</body>
+</html>
