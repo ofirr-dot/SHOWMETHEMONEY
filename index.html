@@ -93,36 +93,78 @@
 
   </div>
 
+  <!-- SCRIPT חדש לחלוטין -->
   <script>
-    // נתוני דמו
-    const overviewData = [
-      { name: "FAIR", value: 681886, pl: 212019, yield: 45.15, type: "קרנות" },
-      { name: "IBKR", value: 654983, pl: 219058, yield: 33.4, type: "השקעות" },
-      { name: "Chase Savings", value: 44453, pl: 0, yield: 0, type: "בנק" },
-      { name: "Chase Checking", value: 50931, pl: 0, yield: 0, type: "בנק" },
-      { name: "בנק הפועלים", value: 40187, pl: 0, yield: 0, type: "בנק" },
-      { name: "קרן השתלמות", value: 29350, pl: 15121, yield: 48.0, type: "פנסיה" },
-      { name: "חיסכון לכל ילד", value: 29350, pl: 15121, yield: 48.0, type: "ילדים" }
-    ];
+
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
     function format(n) {
       return Number(n).toLocaleString("he-IL");
     }
 
-    function loadOverview() {
+    async function loadOverview() {
+
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const ibkr       = data.ibkr?.summary || {};
+      const fair       = data.fair || [];
+      const banks      = data.banks || [];
+      const kids       = data.kids || [];
+      const hishtalmut = data.hishtalmut || {};
+
       document.getElementById("overview-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
+      /*************** חישובי שווי ***************/
+      const fairTotal       = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || r.valueIls || 0), 0);
+      const banksTotal      = banks.reduce((s, r) => s + Number(r["ערך בש״ח"] || r.valueIls || 0), 0);
+      const kidsTotal       = kids.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || r.value || 0), 0);
+      const hishtalmutTotal = Number(hishtalmut.value || 0);
+      const ibkrTotal       = ibkr.totalValueIls || 0;
+
+      const totalValue =
+        fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
+
+      /*************** חישובי רווח ***************/
+      const kidsProfit       = kids.reduce((s, r) => s + ((r["שווי נוכחי (₪)"] || r.value || 0) - (r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0)), 0);
+      const fairProfit       = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0), 0);
+      const hishtalmutProfit = Number(hishtalmut.profit || 0);
+      const ibkrProfit       = ibkr.totalProfitIls || 0;
+
+      const totalProfit =
+        kidsProfit + fairProfit + hishtalmutProfit + ibkrProfit;
+
+      const totalYield =
+        totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
+
+      /*************** הצגת כרטיסים ***************/
+      document.getElementById("overview-total-value").innerText =
+        "₪" + format(totalValue);
+
+      document.getElementById("overview-total-pl").innerText =
+        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+
+      document.getElementById("overview-total-yield").innerText =
+        totalYield.toFixed(2) + "%";
+
+      document.getElementById("overview-total-accounts").innerText =
+        fair.length + banks.length + kids.length + 1 + 1;
+
+      /*************** טבלת סיכום ***************/
       const tbody = document.getElementById("overview-table-body");
       tbody.innerHTML = "";
 
-      let totalValue = 0;
-      let totalPL = 0;
+      const rows = [
+        { name: "IBKR", value: ibkrTotal, pl: ibkrProfit, type: "השקעות" },
+        { name: "FAIR", value: fairTotal, pl: fairProfit, type: "קרנות" },
+        { name: "בנקים", value: banksTotal, pl: 0, type: "בנק" },
+        { name: "קרן השתלמות", value: hishtalmutTotal, pl: hishtalmutProfit, type: "פנסיה" },
+        { name: "חיסכון לכל ילד", value: kidsTotal, pl: kidsProfit, type: "ילדים" }
+      ];
 
-      overviewData.forEach(acc => {
-        totalValue += acc.value;
-        totalPL += acc.pl;
-
+      rows.forEach(acc => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${acc.name}</td>
@@ -130,46 +172,39 @@
           <td class="${acc.pl >= 0 ? 'value-positive' : 'value-negative'}">
             ${acc.pl >= 0 ? '+' : ''}₪${format(acc.pl)}
           </td>
-          <td>${acc.yield}%</td>
+          <td>${acc.value > 0 ? ((acc.pl / (acc.value - acc.pl)) * 100).toFixed(2) : 0}%</td>
           <td>${acc.type}</td>
         `;
         tbody.appendChild(tr);
       });
 
-      document.getElementById("overview-total-value").innerText = "₪" + format(totalValue);
-      document.getElementById("overview-total-pl").innerText = "₪" + format(totalPL);
-      document.getElementById("overview-total-yield").innerText =
-        ((totalPL / (totalValue - totalPL)) * 100).toFixed(2) + "%";
-      document.getElementById("overview-total-accounts").innerText = overviewData.length;
-
-      // גרף
+      /*************** גרף ***************/
       new Chart(document.getElementById("overview-chart"), {
         type: "pie",
         data: {
-          labels: overviewData.map(x => x.name),
+          labels: rows.map(x => x.name),
           datasets: [{
-            data: overviewData.map(x => x.value),
+            data: rows.map(x => x.value),
             backgroundColor: [
               "#6A4FF7", "#0A8A2A", "#00A8A8",
-              "#FF8A3D", "#E84E89", "#0070F3", "#9994FF"
+              "#FF8A3D", "#E84E89"
             ]
           }]
         },
         options: {
-          plugins: {
-            legend: { position: "bottom" }
-          }
+          plugins: { legend: { position: "bottom" } }
         }
       });
     }
 
-    // מצב כהה
+    /*************** מצב כהה ***************/
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
-      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    // Header דינמי
+    /*************** Header דינמי ***************/
     window.addEventListener("scroll", () => {
       const nav = document.querySelector(".top-nav");
       if (window.scrollY > 40) nav.classList.add("shrink");
@@ -177,6 +212,7 @@
     });
 
     loadOverview();
+
   </script>
 
 </body>
