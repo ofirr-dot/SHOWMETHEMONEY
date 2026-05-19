@@ -170,3 +170,8 @@ tr:hover td {
     gap: 10px;
   }
 }
+
+.table-caption {
+  font-size: 12px;
+  color: #888;
+}
