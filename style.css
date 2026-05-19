@@ -1,181 +1,202 @@
-/* ===== בסיס כללי ===== */
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>סקירה כללית – Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-body {
-  font-family: "Assistant", Arial, sans-serif;
-  background: #f2f4f7;
-  color: #1a1a1a;
-  margin: 0;
-  padding: 0;
-  direction: rtl;
-}
+<body class="theme-overview">
 
-h1, h2, h3 {
-  margin: 0;
-  font-weight: 700;
-}
+  <!-- כפתור מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
 
-.page {
-  padding: 25px;
-  max-width: 1200px;
-  margin: auto;
-}
+  <!-- ניווט עליון -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item active"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+  </nav>
 
-/* ===== תפריט עליון ===== */
+  <div class="page">
 
-.top-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e3e6ea;
-  padding: 12px 25px;
-  display: flex;
-  gap: 20px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
+    <!-- כותרת -->
+    <div class="page-header">
+      <div>
+        <h1>סקירה כללית</h1>
+        <div class="page-subtitle" id="overview-timestamp"></div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
 
-.nav-item {
-  text-decoration: none;
-  color: #4a4a4a;
-  font-weight: 600;
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: 0.2s;
-}
+    <!-- כרטיסי סיכום -->
+    <div class="cards-row">
 
-.nav-item:hover {
-  background: #e8eef5;
-}
+      <div class="card">
+        <div class="card-title">שווי כולל</div>
+        <div class="card-main" id="overview-total-value">₪0</div>
+      </div>
 
-.nav-item.active {
-  background: #0070f3;
-  color: white;
-}
+      <div class="card">
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="overview-total-pl">₪0</div>
+      </div>
 
-/* ===== כותרת דף ===== */
+      <div class="card">
+        <div class="card-title">תשואה כוללת</div>
+        <div class="card-main" id="overview-total-yield">0%</div>
+      </div>
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 25px;
-}
+      <div class="card">
+        <div class="card-title">מספר חשבונות</div>
+        <div class="card-main" id="overview-total-accounts">0</div>
+      </div>
 
-.page-subtitle {
-  color: #6d6d6d;
-  font-size: 14px;
-}
+    </div>
 
-/* ===== כרטיסים ===== */
+    <!-- כרטיס גרף עוגה -->
+    <div class="cards-row">
+      <div class="card" style="padding:25px;">
+        <h3 style="margin-bottom:15px;">התפלגות תיק לפי חשבון</h3>
+        <canvas id="overviewPie" height="120"></canvas>
+      </div>
+    </div>
 
-.cards-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-  margin-bottom: 25px;
-}
+    <!-- טבלה -->
+    <div class="table-wrapper">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h2 style="font-size:16px;margin:0;">סיכום לפי חשבון</h2>
+        <span class="table-caption">FAIR · IBKR · בנקים · קרנות · ילדים</span>
+      </div>
 
-.card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  border: 1px solid #e5e7eb;
-  transition: 0.2s;
-}
+      <table>
+        <thead>
+          <tr>
+            <th>שם החשבון</th>
+            <th>שווי נוכחי</th>
+            <th>רווח/הפסד</th>
+            <th>תשואה</th>
+            <th>קטגוריה</th>
+          </tr>
+        </thead>
 
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-}
+        <tbody id="overview-table-body">
+          <tr><td colspan="5">טוען נתונים…</td></tr>
+        </tbody>
 
-.card-title {
-  font-size: 13px;
-  color: #7a7a7a;
-  margin-bottom: 6px;
-}
+      </table>
+    </div>
 
-.card-main {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
+  </div>
 
-.card-sub {
-  font-size: 13px;
-  color: #555;
-}
+  <script>
+    // נתוני דמו עד שיהיה API אמיתי
+    const demoOverview = [
+      { name: "FAIR", value: 681886, pl: 212019, yield: 45.15, type: "קרנות" },
+      { name: "IBKR", value: 654983, pl: 219058, yield: 33.4, type: "השקעות" },
+      { name: "Chase Savings", value: 44453, pl: 0, yield: 0, type: "בנק" },
+      { name: "Chase Checking", value: 50931, pl: 0, yield: 0, type: "בנק" },
+      { name: "בנק הפועלים", value: 40187, pl: 0, yield: 0, type: "בנק" },
+      { name: "קרן השתלמות", value: 29350, pl: 15121, yield: 48.0, type: "פנסיה" },
+      { name: "חיסכון לכל ילד", value: 29350, pl: 15121, yield: 48.0, type: "ילדים" }
+    ];
 
-.card-positive {
-  color: #0a8a2a;
-}
+    function format(n) {
+      return Number(n).toLocaleString("he-IL");
+    }
 
-.card-negative {
-  color: #c0392b;
-}
+    function loadOverview() {
+      // זמן
+      document.getElementById("overview-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
 
-/* ===== טבלאות ===== */
+      const tbody = document.getElementById("overview-table-body");
+      tbody.innerHTML = "";
 
-.table-wrapper {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 15px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  overflow-x: auto;
-}
+      let totalValue = 0;
+      let totalPL = 0;
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
+      demoOverview.forEach(acc => {
+        totalValue += acc.value;
+        totalPL += acc.pl;
 
-th {
-  background: #f7f9fb;
-  padding: 10px;
-  font-weight: 700;
-  border-bottom: 2px solid #e3e6ea;
-  white-space: nowrap;
-}
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${acc.name}</td>
+          <td>₪${format(acc.value)}</td>
+          <td class="${acc.pl >= 0 ? 'value-positive' : 'value-negative'}">
+            ${acc.pl >= 0 ? '+' : ''}₪${format(acc.pl)}
+          </td>
+          <td>${acc.yield}%</td>
+          <td>${acc.type}</td>
+        `;
+        tbody.appendChild(tr);
+      });
 
-td {
-  padding: 10px;
-  border-bottom: 1px solid #f0f0f0;
-  white-space: nowrap;
-}
+      document.getElementById("overview-total-value").innerText =
+        "₪" + format(totalValue);
 
-tr:hover td {
-  background: #f5faff;
-}
+      document.getElementById("overview-total-pl").innerText =
+        "₪" + format(totalPL);
 
-.value-positive {
-  color: #0a8a2a;
-  font-weight: 700;
-}
+      document.getElementById("overview-total-yield").innerText =
+        ((totalPL / (totalValue - totalPL)) * 100).toFixed(2) + "%";
 
-.value-negative {
-  color: #c0392b;
-  font-weight: 700;
-}
+      document.getElementById("overview-total-accounts").innerText =
+        demoOverview.length;
 
-/* ===== מובייל ===== */
+      // גרף עוגה
+      const ctx = document.getElementById("overviewPie");
+      if (ctx) {
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: demoOverview.map(x => x.name),
+            datasets: [{
+              data: demoOverview.map(x => x.value),
+              backgroundColor: [
+                "#6A4FF7",
+                "#0A8A2A",
+                "#00A8A8",
+                "#FF8A3D",
+                "#E84E89",
+                "#0070F3",
+                "#9994FF"
+              ]
+            }]
+          },
+          options: {
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { font: { family: "Assistant" } }
+              }
+            }
+          }
+        });
+      }
+    }
 
-@media (max-width: 700px) {
-  .page {
-    padding: 15px;
-  }
+    // מצב כהה/בהיר
+    const themeBtn = document.getElementById("themeToggle");
+    themeBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      themeBtn.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    });
 
-  .top-nav {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-}
+    // Header דינמי
+    window.addEventListener("scroll", () => {
+      const nav = document.querySelector(".top-nav");
+      if (window.scrollY > 40) nav.classList.add("shrink");
+      else nav.classList.remove("shrink");
+    });
 
-.table-caption {
-  font-size: 12px;
-  color: #888;
-}
+    loadOverview();
+  </script>
 
-.theme-overview .top-nav {
-  border-bottom: 3px solid #0070F3;
-}
+</body>
+</html>
