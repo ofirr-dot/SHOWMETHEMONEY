@@ -175,3 +175,27 @@ tr:hover td {
   font-size: 12px;
   color: #888;
 }
+
+.theme-ibkr .top-nav {
+  border-bottom: 3px solid #0A8A2A;
+}
+
+.theme-fair .top-nav {
+  border-bottom: 3px solid #6A4FF7;
+}
+
+.theme-banks .top-nav {
+  border-bottom: 3px solid #00A8A8;
+}
+
+.theme-hishtalmut .top-nav {
+  border-bottom: 3px solid #FF8A3D;
+}
+
+.theme-kids .top-nav {
+  border-bottom: 3px solid #E84E89;
+}
+
+.theme-overview .top-nav {
+  border-bottom: 3px solid #0070F3;
+}
