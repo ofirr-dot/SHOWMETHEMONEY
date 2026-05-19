@@ -2,20 +2,20 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>סקירה כללית – Show Me The Money</title>
+  <title>IBKR – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-overview">
+<body class="theme-ibkr">
 
   <!-- כפתור מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
   <!-- ניווט עליון -->
   <nav class="top-nav">
-    <a href="index.html" class="nav-item active"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
@@ -27,8 +27,8 @@
     <!-- כותרת -->
     <div class="page-header">
       <div>
-        <h1>סקירה כללית</h1>
-        <div class="page-subtitle" id="overview-timestamp"></div>
+        <h1>IBKR – פוזיציות</h1>
+        <div class="page-subtitle" id="ibkr-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
@@ -37,55 +37,62 @@
     <div class="cards-row">
 
       <div class="card">
-        <div class="card-title">שווי כולל</div>
-        <div class="card-main" id="overview-total-value">₪0</div>
+        <div class="card-title">רווח חופשי (₪)</div>
+        <div class="card-main card-positive" id="ibkr-free-pl-ils">₪0</div>
+        <div class="card-sub" id="ibkr-free-pl-usd">$0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="overview-total-pl">₪0</div>
+        <div class="card-title">שווי נוכחי</div>
+        <div class="card-main" id="ibkr-equity-ils">₪0</div>
+        <div class="card-sub" id="ibkr-equity-usd">$0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">תשואה כוללת</div>
-        <div class="card-main" id="overview-total-yield">0%</div>
+        <div class="card-title">מספר פוזיציות</div>
+        <div class="card-main" id="ibkr-positions-count">0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">מספר חשבונות</div>
-        <div class="card-main" id="overview-total-accounts">0</div>
+        <div class="card-title">שינוי יומי</div>
+        <div class="card-main" id="ibkr-daily-change-ils">₪0</div>
+        <div class="card-sub" id="ibkr-daily-change-pct">0%</div>
       </div>
 
     </div>
 
-    <!-- כרטיס גרף עוגה -->
+    <!-- גרף ביצועים -->
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות תיק לפי חשבון</h3>
-        <canvas id="overviewPie" height="120"></canvas>
+        <h3 style="margin-bottom:15px;">ביצועי IBKR</h3>
+        <canvas id="ibkrChart" height="120"></canvas>
       </div>
     </div>
 
     <!-- טבלה -->
     <div class="table-wrapper">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h2 style="font-size:16px;margin:0;">סיכום לפי חשבון</h2>
-        <span class="table-caption">FAIR · IBKR · בנקים · קרנות · ילדים</span>
+        <h2 style="font-size:16px;margin:0;">פוזיציות פתוחות</h2>
+        <span class="table-caption">נתוני IBKR בזמן אמת</span>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>שם החשבון</th>
-            <th>שווי נוכחי</th>
-            <th>רווח/הפסד</th>
-            <th>תשואה</th>
-            <th>קטגוריה</th>
+            <th>תאריך קנייה</th>
+            <th>עלות קנייה $</th>
+            <th>שווי נוכחי $</th>
+            <th>שער דולר</th>
+            <th>רווח $</th>
+            <th>רווח ₪</th>
+            <th>סימול</th>
+            <th>תיאור</th>
+            <th>שנה</th>
           </tr>
         </thead>
 
-        <tbody id="overview-table-body">
-          <tr><td colspan="5">טוען נתונים…</td></tr>
+        <tbody id="ibkr-table-body">
+          <tr><td colspan="9">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
@@ -94,99 +101,114 @@
   </div>
 
   <script>
-    // נתוני דמו עד שיהיה API אמיתי
-    const demoOverview = [
-      { name: "FAIR", value: 681886, pl: 212019, yield: 45.15, type: "קרנות" },
-      { name: "IBKR", value: 654983, pl: 219058, yield: 33.4, type: "השקעות" },
-      { name: "Chase Savings", value: 44453, pl: 0, yield: 0, type: "בנק" },
-      { name: "Chase Checking", value: 50931, pl: 0, yield: 0, type: "בנק" },
-      { name: "בנק הפועלים", value: 40187, pl: 0, yield: 0, type: "בנק" },
-      { name: "קרן השתלמות", value: 29350, pl: 15121, yield: 48.0, type: "פנסיה" },
-      { name: "חיסכון לכל ילד", value: 29350, pl: 15121, yield: 48.0, type: "ילדים" }
-    ];
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
-    function format(n) {
-      return Number(n).toLocaleString("he-IL");
+    function format(n, d = 2) {
+      return Number(n || 0).toLocaleString("he-IL", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d
+      });
     }
 
-    function loadOverview() {
-      // זמן
-      document.getElementById("overview-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
+    function setTimestamp() {
+      const now = new Date();
+      document.getElementById("ibkr-timestamp").innerText =
+        now.toLocaleString("he-IL");
+    }
 
-      const tbody = document.getElementById("overview-table-body");
+    async function loadIBKR() {
+      setTimestamp();
+
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const positions = data.openPositions || [];
+      const cash = data.cash || [];
+
+      const tbody = document.getElementById("ibkr-table-body");
       tbody.innerHTML = "";
 
-      let totalValue = 0;
-      let totalPL = 0;
+      let totalEquityUSD = 0;
+      let totalEquityILS = 0;
+      let totalPLUSD = 0;
+      let totalPLILS = 0;
 
-      demoOverview.forEach(acc => {
-        totalValue += acc.value;
-        totalPL += acc.pl;
+      positions.forEach(p => {
+        const qty = Number(p.quantity);
+        const cost = qty * Number(p.costBasisPrice);
+        const value = qty * Number(p.markPrice);
+        const fx = Number(p.fxRateToBase);
+        const plUSD = value - cost;
+        const plILS = plUSD * fx;
+
+        totalEquityUSD += value;
+        totalEquityILS += value * fx;
+        totalPLUSD += plUSD;
+        totalPLILS += plILS;
+
+        const date = p.openDateTime?.split(" ")[0] || "-";
+        const year = date.split("/")[2] || "";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${acc.name}</td>
-          <td>₪${format(acc.value)}</td>
-          <td class="${acc.pl >= 0 ? 'value-positive' : 'value-negative'}">
-            ${acc.pl >= 0 ? '+' : ''}₪${format(acc.pl)}
+          <td>${date}</td>
+          <td>${format(cost)}</td>
+          <td>${format(value)}</td>
+          <td>${format(fx, 4)}</td>
+          <td class="${plUSD >= 0 ? 'value-positive' : 'value-negative'}">
+            ${plUSD >= 0 ? '+' : ''}${format(plUSD)}
           </td>
-          <td>${acc.yield}%</td>
-          <td>${acc.type}</td>
+          <td class="${plILS >= 0 ? 'value-positive' : 'value-negative'}">
+            ${plILS >= 0 ? '+' : ''}${format(plILS)}
+          </td>
+          <td>${p.symbol}</td>
+          <td>${p.description}</td>
+          <td>${year}</td>
         `;
         tbody.appendChild(tr);
       });
 
-      document.getElementById("overview-total-value").innerText =
-        "₪" + format(totalValue);
+      cash.forEach(c => {
+        totalEquityILS += Number(c.endingCash) * Number(c.fxRateToBase);
+      });
 
-      document.getElementById("overview-total-pl").innerText =
-        "₪" + format(totalPL);
+      document.getElementById("ibkr-equity-usd").innerText = "$" + format(totalEquityUSD);
+      document.getElementById("ibkr-equity-ils").innerText = "₪" + format(totalEquityILS);
 
-      document.getElementById("overview-total-yield").innerText =
-        ((totalPL / (totalValue - totalPL)) * 100).toFixed(2) + "%";
+      document.getElementById("ibkr-free-pl-usd").innerText =
+        "$" + (totalPLUSD >= 0 ? "+" : "") + format(totalPLUSD);
+      document.getElementById("ibkr-free-pl-ils").innerText =
+        "₪" + (totalPLILS >= 0 ? "+" : "") + format(totalPLILS);
 
-      document.getElementById("overview-total-accounts").innerText =
-        demoOverview.length;
+      document.getElementById("ibkr-positions-count").innerText = positions.length;
 
-      // גרף עוגה
-      const ctx = document.getElementById("overviewPie");
-      if (ctx) {
-        new Chart(ctx, {
-          type: "pie",
-          data: {
-            labels: demoOverview.map(x => x.name),
-            datasets: [{
-              data: demoOverview.map(x => x.value),
-              backgroundColor: [
-                "#6A4FF7",
-                "#0A8A2A",
-                "#00A8A8",
-                "#FF8A3D",
-                "#E84E89",
-                "#0070F3",
-                "#9994FF"
-              ]
-            }]
-          },
-          options: {
-            plugins: {
-              legend: {
-                position: "bottom",
-                labels: { font: { family: "Assistant" } }
-              }
-            }
-          }
-        });
-      }
+      // גרף ביצועים
+      new Chart(document.getElementById("ibkrChart"), {
+        type: "line",
+        data: {
+          labels: positions.map(p => p.symbol),
+          datasets: [{
+            label: "רווח $",
+            data: positions.map(p => {
+              const qty = Number(p.quantity);
+              const cost = qty * Number(p.costBasisPrice);
+              const value = qty * Number(p.markPrice);
+              return value - cost;
+            }),
+            borderColor: "#0A8A2A",
+            backgroundColor: "rgba(10,138,42,0.2)",
+            tension: 0.3
+          }]
+        }
+      });
     }
 
     // מצב כהה/בהיר
-    const themeBtn = document.getElementById("themeToggle");
-    themeBtn.addEventListener("click", () => {
+    document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
-      themeBtn.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
-    });
+      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
 
     // Header דינמי
     window.addEventListener("scroll", () => {
@@ -195,7 +217,7 @@
       else nav.classList.remove("shrink");
     });
 
-    loadOverview();
+    loadIBKR();
   </script>
 
 </body>
