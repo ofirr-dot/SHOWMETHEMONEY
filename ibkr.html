@@ -25,22 +25,26 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- שורת כרטיסי סיכום -->
     <div class="cards-row">
       <div class="card">
         <div class="card-title">רווח חופשי (₪)</div>
         <div class="card-main card-positive" id="ibkr-free-pl-ils">₪0</div>
         <div class="card-sub" id="ibkr-free-pl-usd">$0</div>
       </div>
+
       <div class="card">
         <div class="card-title">שווי נוכחי (IBKR)</div>
         <div class="card-main" id="ibkr-equity-ils">₪0</div>
         <div class="card-sub" id="ibkr-equity-usd">$0</div>
       </div>
+
       <div class="card">
         <div class="card-title">מספר פוזיציות</div>
         <div class="card-main" id="ibkr-positions-count">0</div>
-        <div class="card-sub">כולל ETF / מניות</div>
+        <div class="card-sub">ETF / מניות פתוחות</div>
       </div>
+
       <div class="card">
         <div class="card-title">שינוי יומי (₪)</div>
         <div class="card-main" id="ibkr-daily-change-ils">₪0</div>
@@ -48,7 +52,12 @@
       </div>
     </div>
 
+    <!-- טבלה -->
     <div class="table-wrapper">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h2 style="font-size:16px;margin:0;">פוזיציות פתוחות</h2>
+        <span class="table-caption">כל הסכומים בדולרים ושקלים לפי שער עדכני</span>
+      </div>
       <table>
         <thead>
           <tr>
@@ -64,7 +73,7 @@
           </tr>
         </thead>
         <tbody id="ibkr-table-body">
-          <!-- ימולא דינמית -->
+          <tr><td colspan="9">טוען נתונים…</td></tr>
         </tbody>
       </table>
     </div>
@@ -95,7 +104,6 @@
       const data = await res.json();
 
       const positions = data.openPositions || [];
-      const realizedBySymbol = data.realizedBySymbol || {};
       const cash = data.cash || [];
 
       const tbody = document.getElementById("ibkr-table-body");
@@ -144,7 +152,7 @@
         tbody.appendChild(tr);
       });
 
-      // מזומן ב‑IBKR – נוסיף לשווי הכולל
+      // מזומן ב‑IBKR – נוסיף לשווי הכולל בשקלים
       cash.forEach(c => {
         const valILS = (Number(c.endingCash) || 0) * (Number(c.fxRateToBase) || 1);
         totalEquityILS += valILS;
@@ -163,14 +171,17 @@
       document.getElementById("ibkr-positions-count").innerText =
         positions.length.toString();
 
-      // שינוי יומי – כרגע אין מה‑API, נשים 0 עד שיהיה מקור
+      // כרגע שינוי יומי – 0 עד שיהיה מקור נתונים
       document.getElementById("ibkr-daily-change-ils").innerText = "₪0.00";
       document.getElementById("ibkr-daily-change-pct").innerText = "0.00%";
     }
 
     loadIBKR().catch(err => {
       console.error(err);
-      document.getElementById("ibkr-timestamp").innerText = "שגיאה בטעינת הנתונים";
+      document.getElementById("ibkr-timestamp").innerText =
+        "שגיאה בטעינת הנתונים";
+      document.getElementById("ibkr-table-body").innerHTML =
+        '<tr><td colspan="9">שגיאה בטעינת הנתונים</td></tr>';
     });
   </script>
 
