@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>בנקים – Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item">סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item">IBKR</a>
+    <a href="fair.html" class="nav-item">FAIR</a>
+    <a href="banks.html" class="nav-item active">בנקים</a>
+    <a href="hishtalmut.html" class="nav-item">קרן השתלמות</a>
+    <a href="kids.html" class="nav-item">חיסכון לכל ילד</a>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>מזומן ונזיל</h1>
+        <div class="page-subtitle" id="banks-timestamp"></div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-title">סה״כ מזומן ונזיל</div>
+        <div class="card-main" id="banks-total-cash">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">שער דולר</div>
+        <div class="card-main" id="banks-usd-rate">0.0000</div>
+      </div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-title">Chase Savings</div>
+        <div class="card-main" id="banks-chase-savings">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Chase Checking</div>
+        <div class="card-main" id="banks-chase-checking">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">בנק הפועלים</div>
+        <div class="card-main" id="banks-hapoalim">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">FAIR מזומן</div>
+        <div class="card-main" id="banks-fair-cash">₪0</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById("banks-timestamp").innerText =
+      new Date().toLocaleString("he-IL");
+  </script>
+
+</body>
+</html>
