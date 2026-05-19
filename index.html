@@ -2,69 +2,134 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>סקירה כללית – Show Me The Money</title>
+  <title>בנקים – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
   <nav class="top-nav">
-    <a href="index.html" class="nav-item active">סקירה כללית</a>
+    <a href="index.html" class="nav-item">סקירה כללית</a>
     <a href="ibkr.html" class="nav-item">IBKR</a>
     <a href="fair.html" class="nav-item">FAIR</a>
-    <a href="banks.html" class="nav-item">בנקים</a>
+    <a href="banks.html" class="nav-item active">בנקים</a>
     <a href="hishtalmut.html" class="nav-item">קרן השתלמות</a>
     <a href="kids.html" class="nav-item">חיסכון לכל ילד</a>
   </nav>
 
   <div class="page">
+
+    <!-- כותרת -->
     <div class="page-header">
       <div>
-        <h1>סקירה כללית</h1>
-        <div class="page-subtitle" id="overview-timestamp"></div>
+        <h1>מזומן ונזיל</h1>
+        <div class="page-subtitle" id="banks-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- כרטיסי סיכום -->
     <div class="cards-row">
+
       <div class="card">
-        <div class="card-title">סה״כ גורמים</div>
-        <div class="card-main" id="overview-total-entities">₪0</div>
+        <div class="card-title">סה״כ מזומן ונזיל</div>
+        <div class="card-main" id="banks-total-cash">₪0</div>
+        <div class="card-sub" id="banks-total-cash-usd">$0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">סה״כ ג'י ל'</div>
-        <div class="card-main" id="overview-total-gl">₪0</div>
+        <div class="card-title">שער דולר</div>
+        <div class="card-main" id="banks-usd-rate">0.0000</div>
+        <div class="card-sub">USD/ILS</div>
       </div>
 
-      <div class="card">
-        <div class="card-title">סה״כ מסנן</div>
-        <div class="card-main" id="overview-total-filter">₪0</div>
-      </div>
     </div>
 
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>שם</th>
-            <th>סוג</th>
-            <th>שווי נוכחי</th>
-            <th>רווח/הפסד</th>
-            <th>תשואה</th>
-            <th>תאריך עדכון</th>
-          </tr>
-        </thead>
-        <tbody id="overview-table-body">
-          <tr><td colspan="6">נתונים יתווספו בהמשך</td></tr>
-        </tbody>
-      </table>
+    <!-- כרטיסים לכל חשבון -->
+    <h2 style="margin-bottom:10px;font-size:18px;">חשבונות</h2>
+
+    <div class="cards-row">
+
+      <div class="card">
+        <div class="card-title">Chase Savings</div>
+        <div class="card-main" id="banks-chase-savings-ils">₪0</div>
+        <div class="card-sub" id="banks-chase-savings-usd">$0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Chase Checking</div>
+        <div class="card-main" id="banks-chase-checking-ils">₪0</div>
+        <div class="card-sub" id="banks-chase-checking-usd">$0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">בנק הפועלים</div>
+        <div class="card-main" id="banks-hapoalim-ils">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">FAIR מזומן</div>
+        <div class="card-main" id="banks-fair-cash-ils">₪0</div>
+      </div>
+
     </div>
+
   </div>
 
   <script>
-    document.getElementById("overview-timestamp").innerText =
-      new Date().toLocaleString("he-IL");
+    // נתוני דמו עד שיהיה API אמיתי
+    const demoBanks = {
+      usdRate: 2.9916,
+      chaseSavingsUSD: 14859,
+      chaseCheckingUSD: 17025,
+      hapoalimILS: 40187,
+      fairCashILS: 64613
+    };
+
+    function format(n) {
+      return Number(n).toLocaleString("he-IL");
+    }
+
+    function loadBanks() {
+      document.getElementById("banks-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const fx = demoBanks.usdRate;
+
+      const chaseSavingsILS = demoBanks.chaseSavingsUSD * fx;
+      const chaseCheckingILS = demoBanks.chaseCheckingUSD * fx;
+
+      const total =
+        chaseSavingsILS +
+        chaseCheckingILS +
+        demoBanks.hapoalimILS +
+        demoBanks.fairCashILS;
+
+      document.getElementById("banks-usd-rate").innerText = fx.toFixed(4);
+
+      document.getElementById("banks-chase-savings-ils").innerText =
+        "₪" + format(chaseSavingsILS);
+      document.getElementById("banks-chase-savings-usd").innerText =
+        "$" + format(demoBanks.chaseSavingsUSD);
+
+      document.getElementById("banks-chase-checking-ils").innerText =
+        "₪" + format(chaseCheckingILS);
+      document.getElementById("banks-chase-checking-usd").innerText =
+        "$" + format(demoBanks.chaseCheckingUSD);
+
+      document.getElementById("banks-hapoalim-ils").innerText =
+        "₪" + format(demoBanks.hapoalimILS);
+
+      document.getElementById("banks-fair-cash-ils").innerText =
+        "₪" + format(demoBanks.fairCashILS);
+
+      document.getElementById("banks-total-cash").innerText =
+        "₪" + format(total);
+      document.getElementById("banks-total-cash-usd").innerText =
+        "$" + format(total / fx);
+    }
+
+    loadBanks();
   </script>
 
 </body>
