@@ -18,6 +18,8 @@
   </nav>
 
   <div class="page">
+
+    <!-- כותרת -->
     <div class="page-header">
       <div>
         <h1>FAIR – קרנות</h1>
@@ -26,7 +28,9 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- כרטיסי סיכום -->
     <div class="cards-row">
+
       <div class="card">
         <div class="card-title">מספר קרנות</div>
         <div class="card-main" id="fair-funds-count">0</div>
@@ -40,15 +44,23 @@
       <div class="card">
         <div class="card-title">רווח כולל</div>
         <div class="card-main card-positive" id="fair-total-pl">₪0</div>
+        <div class="card-sub" id="fair-total-pl-pct">0%</div>
       </div>
 
       <div class="card">
-        <div class="card-title">תשואה כוללת</div>
+        <div class="card-title">תשואה ממוצעת</div>
         <div class="card-main" id="fair-total-yield">0%</div>
       </div>
+
     </div>
 
+    <!-- טבלה -->
     <div class="table-wrapper">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h2 style="font-size:16px;margin:0;">רשימת הקרנות</h2>
+        <span class="table-caption">נתוני FAIR כפי שמופיעים במערכת</span>
+      </div>
+
       <table>
         <thead>
           <tr>
@@ -60,17 +72,21 @@
             <th>תשואה</th>
           </tr>
         </thead>
+
         <tbody id="fair-table-body">
-          <tr><td colspan="6">נתוני FAIR יתחברו בהמשך</td></tr>
+          <tr><td colspan="6">טוען נתונים…</td></tr>
         </tbody>
+
       </table>
     </div>
+
   </div>
 
   <script>
-    document.getElementById("fair-timestamp").innerText =
-      new Date().toLocaleString("he-IL");
-  </script>
-
-</body>
-</html>
+    // כרגע אין API ל-FAIR, אז נשים נתוני דמו עד שתחבר מקור נתונים
+    const fairDemoData = [
+      { name: "מורכב 4A וונט", type: "אג\"ח", qty: 1200, value: 64613, pl: 212019, yield: 45.15 },
+      { name: "IBI הלוואות 125", type: "הלוואות", qty: 300, value: 18000, pl: 6000, yield: 33.3 },
+      { name: "הראל הלוואות 35", type: "הלוואות", qty: 500, value: 22000, pl: 8000, yield: 36.3 },
+      { name: "IBI אג\"ח ביטוח", type: "אג\"ח", qty: 900, value: 31000, pl: 9000, yield: 29.0 },
+      {
