@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div>
+      <h1>Show Me The Money</h1>
+      <div class="subtitle" id="timestamp"></div>
+    </div>
+    <div class="subtitle">Ofir</div>
+  </div>
+
+  <div id="status" class="loading">טוען נתונים מהגיליון…</div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">בנק לאומי</div>
+      <div class="card-value" id="leumiValue">₪0</div>
+      <div class="card-sub" id="leumiPercent">0.0%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">FAIR</div>
+      <div class="card-value" id="fairValue">₪0</div>
+      <div class="card-sub" id="fairPercent">0.0%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">IBKR</div>
+      <div class="card-value" id="ibkrValue">₪0</div>
+      <div class="card-sub" id="ibkrPercent">0.0%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">שווי כולל תיק</div>
+      <div class="card-value" id="totalValue">₪0</div>
+      <div class="card-sub">
+        <span class="card-positive" id="totalChangePct">0.0%</span>
+        &nbsp;
+        <span id="totalChangeAbs">+0₪</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>חלוקת תיק</h2>
+      <canvas id="allocationChart" height="220"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>עלות מול שווי נוכחי</h2>
+      <canvas id="barChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="summary">סיכום</button>
+      <button class="tab-btn" data-tab="ibkr">IBKR</button>
+      <button class="tab-btn" data-tab="fair">FAIR</button>
+      <button class="tab-btn" data-tab="leumi">בנק לאומי</button>
+    </div>
+
+    <div id="tab-summary" class="tab-content active">
+      <h2>סיכום תיק</h2>
+      <p>שווי תיק: <span id="sumTotal"></span></p>
+      <p>רווח לא ממומש: <span id="sumUnrealized"></span></p>
+      <p>רווח ממומש: <span id="sumRealized"></span></p>
+      <p>סה״כ רווח: <span id="sumPL"></span></p>
+    </div>
+
+    <div id="tab-ibkr" class="tab-content">
+      <h2>IBKR – פוזיציות</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>סימול</th>
+              <th>שם</th>
+              <th>מטבע</th>
+              <th>כמות</th>
+              <th>מחיר קנייה</th>
+              <th>תאריך פתיחה</th>
+              <th>שער FX</th>
+              <th>מחיר נוכחי</th>
+              <th>שווי (בסיס)</th>
+              <th>רווח לא ממומש</th>
+              <th>רווח ממומש</th>
+              <th>סה״כ רווח</th>
+            </tr>
+          </thead>
+          <tbody id="ibkrTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-fair" class="tab-content">
+      <h2>FAIR</h2>
+      <p>כרגע לא מחובר לנתונים.</p>
+    </div>
+
+    <div id="tab-leumi" class="tab-content">
+      <h2>בנק לאומי</h2>
+      <p>כרגע לא מחובר לנתונים.</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
