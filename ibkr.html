@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>IBKR – Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item">סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item active">IBKR</a>
+    <a href="fair.html" class="nav-item">FAIR</a>
+    <a href="banks.html" class="nav-item">בנקים</a>
+    <a href="hishtalmut.html" class="nav-item">קרן השתלמות</a>
+    <a href="kids.html" class="nav-item">חיסכון לכל ילד</a>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>IBKR – פוזיציות</h1>
+        <div class="page-subtitle" id="ibkr-timestamp"></div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-title">רווח חופשי (₪)</div>
+        <div class="card-main card-positive" id="ibkr-free-pl-ils">₪0</div>
+        <div class="card-sub" id="ibkr-free-pl-usd">$0</div>
+      </div>
+      <div class="card">
+        <div class="card-title">שווי נוכחי (IBKR)</div>
+        <div class="card-main" id="ibkr-equity-ils">₪0</div>
+        <div class="card-sub" id="ibkr-equity-usd">$0</div>
+      </div>
+      <div class="card">
+        <div class="card-title">מספר פוזיציות</div>
+        <div class="card-main" id="ibkr-positions-count">0</div>
+        <div class="card-sub">כולל ETF / מניות</div>
+      </div>
+      <div class="card">
+        <div class="card-title">שינוי יומי (₪)</div>
+        <div class="card-main" id="ibkr-daily-change-ils">₪0</div>
+        <div class="card-sub" id="ibkr-daily-change-pct">0.00%</div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>תאריך קנייה</th>
+            <th>עלות קנייה $</th>
+            <th>שווי נוכחי $</th>
+            <th>שער דולר</th>
+            <th>רווח $</th>
+            <th>רווח ₪</th>
+            <th>סימול</th>
+            <th>תיאור</th>
+            <th>שנה</th>
+          </tr>
+        </thead>
+        <tbody id="ibkr-table-body">
+          <!-- ימולא דינמית -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
+
+    function formatNumber(n, digits = 2) {
+      return Number(n || 0).toLocaleString("he-IL", {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits
+      });
+    }
+
+    function setTimestamp() {
+      const now = new Date();
+      const d = now.toLocaleDateString("he-IL");
+      const t = now.toLocaleTimeString("he-IL", { hour12: false });
+      document.getElementById("ibkr-timestamp").innerText = `${t} · ${d}`;
+    }
+
+    async function loadIBKR() {
+      setTimestamp();
+
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const positions = data.openPositions || [];
+      const realizedBySymbol = data.realizedBySymbol || {};
+      const cash = data.cash || [];
+
+      const tbody = document.getElementById("ibkr-table-body");
+      tbody.innerHTML = "";
+
+      let totalEquityUSD = 0;
+      let totalEquityILS = 0;
+      let totalPLUSD = 0;
+      let totalPLILS = 0;
+
+      positions.forEach(p => {
+        const qty = Number(p.quantity) || 0;
+        const costPrice = Number(p.costBasisPrice) || 0;
+        const markPrice = Number(p.markPrice) || 0;
+        const fx = Number(p.fxRateToBase) || 1;
+
+        const costUSD = qty * costPrice;
+        const valueUSD = qty * markPrice;
+        const plUSD = valueUSD - costUSD;
+        const plILS = plUSD * fx;
+
+        totalEquityUSD += valueUSD;
+        totalEquityILS += valueUSD * fx;
+        totalPLUSD += plUSD;
+        totalPLILS += plILS;
+
+        const dateStr = p.openDateTime ? String(p.openDateTime).split(" ")[0] : "";
+        const year = dateStr ? dateStr.split("/").pop() || "" : "";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${dateStr || "-"}</td>
+          <td>${formatNumber(costUSD)}</td>
+          <td>${formatNumber(valueUSD)}</td>
+          <td>${formatNumber(fx, 4)}</td>
+          <td class="${plUSD >= 0 ? 'value-positive' : 'value-negative'}">
+            ${plUSD >= 0 ? '+' : ''}${formatNumber(plUSD)}
+          </td>
+          <td class="${plILS >= 0 ? 'value-positive' : 'value-negative'}">
+            ${plILS >= 0 ? '+' : ''}${formatNumber(plILS)}
+          </td>
+          <td>${p.symbol || ''}</td>
+          <td>${p.description || ''}</td>
+          <td>${year}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // מזומן ב‑IBKR – נוסיף לשווי הכולל
+      cash.forEach(c => {
+        const valILS = (Number(c.endingCash) || 0) * (Number(c.fxRateToBase) || 1);
+        totalEquityILS += valILS;
+      });
+
+      document.getElementById("ibkr-equity-usd").innerText =
+        "$" + formatNumber(totalEquityUSD);
+      document.getElementById("ibkr-equity-ils").innerText =
+        "₪" + formatNumber(totalEquityILS);
+
+      document.getElementById("ibkr-free-pl-usd").innerText =
+        "$" + (totalPLUSD >= 0 ? "+" : "") + formatNumber(totalPLUSD);
+      document.getElementById("ibkr-free-pl-ils").innerText =
+        "₪" + (totalPLILS >= 0 ? "+" : "") + formatNumber(totalPLILS);
+
+      document.getElementById("ibkr-positions-count").innerText =
+        positions.length.toString();
+
+      // שינוי יומי – כרגע אין מה‑API, נשים 0 עד שיהיה מקור
+      document.getElementById("ibkr-daily-change-ils").innerText = "₪0.00";
+      document.getElementById("ibkr-daily-change-pct").innerText = "0.00%";
+    }
+
+    loadIBKR().catch(err => {
+      console.error(err);
+      document.getElementById("ibkr-timestamp").innerText = "שגיאה בטעינת הנתונים";
+    });
+  </script>
+
+</body>
+</html>
