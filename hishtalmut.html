@@ -2,96 +2,75 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>IBKR – Show Me The Money</title>
+  <title>קרן השתלמות – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-ibkr">
+<body class="theme-hishtalmut">
 
-  <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="hishtalmut.html" class="nav-item active"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
 
   <div class="page">
 
-    <!-- כותרת -->
     <div class="page-header">
       <div>
-        <h1>IBKR – פוזיציות</h1>
-        <div class="page-subtitle" id="ibkr-timestamp"></div>
+        <h1>קרן השתלמות</h1>
+        <div class="page-subtitle" id="hishtalmut-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- כרטיסים -->
     <div class="cards-row">
 
       <div class="card">
-        <div class="card-title">שווי נוכחי (₪)</div>
-        <div class="card-main" id="ibkr-total-value-ils">₪0</div>
-        <div class="card-sub" id="ibkr-total-value-usd">$0</div>
+        <div class="card-title">שווי נוכחי</div>
+        <div class="card-main" id="hishtalmut-value">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="ibkr-total-pl-ils">₪0</div>
-        <div class="card-sub" id="ibkr-total-pl-usd">$0</div>
+        <div class="card-title">רווח/הפסד</div>
+        <div class="card-main card-positive" id="hishtalmut-pl">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">מספר פוזיציות</div>
-        <div class="card-main" id="ibkr-positions-count">0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח ממומש</div>
-        <div class="card-main" id="ibkr-realized-ils">₪0</div>
-        <div class="card-sub" id="ibkr-realized-usd">$0</div>
+        <div class="card-title">תשואה</div>
+        <div class="card-main" id="hishtalmut-yield">0%</div>
       </div>
 
     </div>
 
-    <!-- גרף -->
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">רווח לא ממומש לפי סימול</h3>
-        <canvas id="ibkr-chart" height="120"></canvas>
+        <h3 style="margin-bottom:15px;">התפלגות</h3>
+        <canvas id="hishtalmut-chart" height="120"></canvas>
       </div>
     </div>
 
-    <!-- טבלה -->
     <div class="table-wrapper">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h2 style="font-size:16px;margin:0;">פוזיציות פתוחות</h2>
-        <span class="table-caption">נתוני IBKR מתוך Google Sheets</span>
-      </div>
+      <h2 style="font-size:16px;margin-bottom:10px;">פרטי הקרן</h2>
 
       <table>
         <thead>
           <tr>
-            <th>סימול</th>
-            <th>שם</th>
-            <th>כמות</th>
-            <th>מחיר $</th>
-            <th>שווי $</th>
-            <th>עלות $</th>
-            <th>רווח $</th>
-            <th>רווח ₪</th>
+            <th>שם הקרן</th>
+            <th>שווי נוכחי (₪)</th>
+            <th>רווח/הפסד (₪)</th>
+            <th>תשואה</th>
           </tr>
         </thead>
 
-        <tbody id="ibkr-table-body">
-          <tr><td colspan="9">טוען נתונים…</td></tr>
+        <tbody id="hishtalmut-table-body">
+          <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
@@ -99,129 +78,76 @@
 
   </div>
 
-  <!-- SCRIPT חדש לחלוטין -->
   <script>
-
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function format(n, d = 2) {
+    function format(n) {
       return Number(n || 0).toLocaleString("he-IL", {
-        minimumFractionDigits: d,
-        maximumFractionDigits: d
+        maximumFractionDigits: 2
       });
     }
 
-    async function loadIBKR() {
-
-      document.getElementById("ibkr-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
-
+    async function loadHishtalmut() {
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const positions = data.ibkr?.positions || [];
-      const summary   = data.ibkr?.summary || {};
-      const realized  = data.ibkr?.realized || [];
+      const h = data.hishtalmut || {};
 
-      const usdRate = summary.usdRate || 0;
+      document.getElementById("hishtalmut-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
 
-      /***********************
-       * כרטיסים
-       ***********************/
-      document.getElementById("ibkr-total-value-usd").innerText =
-        "$" + format(summary.totalValueUsd);
+      const value = Number(h.value || 0);
+      const pl = Number(h.profit || 0);
+      const yieldPct =
+        value > 0 ? (pl / (value - pl)) * 100 : 0;
 
-      document.getElementById("ibkr-total-value-ils").innerText =
-        "₪" + format(summary.totalValueIls);
+      document.getElementById("hishtalmut-value").innerText =
+        "₪" + format(value);
 
-      document.getElementById("ibkr-total-pl-usd").innerText =
-        "$" + (summary.totalProfitUsd >= 0 ? "+" : "") + format(summary.totalProfitUsd);
+      document.getElementById("hishtalmut-pl").innerText =
+        (pl >= 0 ? "+" : "") + "₪" + format(pl);
 
-      document.getElementById("ibkr-total-pl-ils").innerText =
-        "₪" + (summary.totalProfitIls >= 0 ? "+" : "") + format(summary.totalProfitIls);
+      document.getElementById("hishtalmut-yield").innerText =
+        yieldPct.toFixed(2) + "%";
 
-      document.getElementById("ibkr-positions-count").innerText =
-        positions.length;
-
-      const realizedUsd = realized.reduce((s, r) => s + Number(r.plUsd || 0), 0);
-      const realizedIls = realized.reduce((s, r) => s + Number(r.plIls || 0), 0);
-
-      document.getElementById("ibkr-realized-usd").innerText =
-        "$" + format(realizedUsd);
-
-      document.getElementById("ibkr-realized-ils").innerText =
-        "₪" + format(realizedIls);
-
-      /***********************
-       * טבלה
-       ***********************/
-      const tbody = document.getElementById("ibkr-table-body");
-      tbody.innerHTML = "";
-
-      positions.forEach(p => {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>${p.symbol}</td>
-          <td>${p.name}</td>
-          <td>${p.qty}</td>
-          <td>$${format(p.priceUsd)}</td>
-          <td>$${format(p.valueUsd)}</td>
-          <td>$${format(p.costUsd)}</td>
-          <td class="${p.plUsd >= 0 ? 'value-positive' : 'value-negative'}">
-            ${p.plUsd >= 0 ? '+' : ''}$${format(p.plUsd)}
+      const tbody = document.getElementById("hishtalmut-table-body");
+      tbody.innerHTML = `
+        <tr>
+          <td>${h.name || "—"}</td>
+          <td>₪${format(value)}</td>
+          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
+            ${pl >= 0 ? '+' : ''}₪${format(pl)}
           </td>
-          <td class="${p.plIls >= 0 ? 'value-positive' : 'value-negative'}">
-            ${p.plIls >= 0 ? '+' : ''}₪${format(p.plIls)}
-          </td>
-        `;
+          <td>${yieldPct.toFixed(2)}%</td>
+        </tr>
+      `;
 
-        tbody.appendChild(tr);
-      });
-
-      /***********************
-       * גרף רווח לא ממומש
-       ***********************/
-      new Chart(document.getElementById("ibkr-chart"), {
-        type: "bar",
-        data: {
-          labels: positions.map(p => p.symbol),
-          datasets: [{
-            label: "רווח לא ממומש ($)",
-            data: positions.map(p => p.plUsd),
-            backgroundColor: positions.map(p =>
-              p.plUsd >= 0 ? "rgba(10,138,42,0.6)" : "rgba(200,0,0,0.6)"
-            )
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } }
-        }
-      });
-
+      const ctx = document.getElementById("hishtalmut-chart");
+      if (ctx) {
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["שווי נוכחי", "רווח"],
+            datasets: [{
+              data: [value - pl, pl],
+              backgroundColor: ["#6A4FF7", "#0A8A2A"]
+            }]
+          },
+          options: {
+            plugins: { legend: { position: "bottom" } }
+          }
+        });
+      }
     }
 
-    /***********************
-     * מצב כהה
-     ***********************/
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
       themeToggle.textContent =
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    /***********************
-     * Header דינמי
-     ***********************/
-    window.addEventListener("scroll", () => {
-      const nav = document.querySelector(".top-nav");
-      if (window.scrollY > 40) nav.classList.add("shrink");
-      else nav.classList.remove("shrink");
-    });
-
-    loadIBKR();
-
+    loadHishtalmut();
   </script>
 
 </body>
