@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>רווח ממומש</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <h1>💰 רווח ממומש</h1>
+    <p>כל המכירות שבוצעו + רווחים בדולר ובשקל</p>
+
+    <table id="realized-table">
+      <thead>
+        <tr>
+          <th>שנה</th>
+          <th>סימבול</th>
+          <th>תיאור</th>
+          <th>תאריך מכירה</th>
+          <th>עלות קנייה ($)</th>
+          <th>תמורה ($)</th>
+          <th>רווח ($)</th>
+          <th>שער</th>
+          <th>רווח (₪)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadData() {
+      const res = await fetch("YOUR_APPSCRIPT_URL_HERE");
+      const data = await res.json();
+
+      const rows = data.realized;
+      const tbody = document.querySelector("#realized-table tbody");
+
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${r.year}</td>
+          <td>${r.symbol}</td>
+          <td>${r.description}</td>
+          <td>${r.saleDate}</td>
+          <td>${r.costUsd.toLocaleString()}</td>
+          <td>${r.proceedsUsd.toLocaleString()}</td>
+          <td>${r.profitUsd.toLocaleString()}</td>
+          <td>${r.fxRate}</td>
+          <td>${r.profitIls.toLocaleString()}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
