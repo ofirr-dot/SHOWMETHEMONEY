@@ -91,6 +91,8 @@
       </table>
     </div>
 
+    <div id="overview-error" style="margin-top:10px;color:#ff4d4f;font-size:13px;display:none;"></div>
+
   </div>
 
   <script>
@@ -98,99 +100,152 @@
       "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
     function format(n) {
-      return Number(n).toLocaleString("he-IL");
+      return Number(n || 0).toLocaleString("he-IL", {
+        maximumFractionDigits: 2
+      });
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("overview-error");
+      el.style.display = "block";
+      el.textContent = msg;
     }
 
     async function loadOverview() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-
-      const ibkr       = data.ibkr?.summary || {};
-      const fair       = data.fair || [];
-      const banks      = data.banks || [];
-      const kids       = data.kids || [];
-      const hishtalmut = data.hishtalmut || {};
-
-      document.getElementById("overview-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
-
-      // חישובי שווי
-      const fairTotal       = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || r.valueIls || 0), 0);
-      const banksTotal      = banks.reduce((s, r) => s + Number(r["ערך בש״ח"] || r.valueIls || 0), 0);
-      const kidsTotal       = kids.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || r.value || 0), 0);
-      const hishtalmutTotal = Number(hishtalmut.value || 0);
-      const ibkrTotal       = Number(ibkr.totalValueIls || 0);
-
-      const totalValue =
-        fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
-
-      // חישובי רווח
-      const kidsProfit       = kids.reduce((s, r) => s + ((r["שווי נוכחי (₪)"] || r.value || 0) - (r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0)), 0);
-      const fairProfit       = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0), 0);
-      const hishtalmutProfit = Number(hishtalmut.profit || 0);
-      const ibkrProfit       = Number(ibkr.totalProfitIls || 0);
-
-      const totalProfit =
-        kidsProfit + fairProfit + hishtalmutProfit + ibkrProfit;
-
-      const totalYield =
-        totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
-
-      // כרטיסים
-      document.getElementById("overview-total-value").innerText =
-        "₪" + format(totalValue);
-
-      document.getElementById("overview-total-pl").innerText =
-        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
-
-      document.getElementById("overview-total-yield").innerText =
-        totalYield.toFixed(2) + "%";
-
-      document.getElementById("overview-total-accounts").innerText = 5;
-
-      // טבלת סיכום
-      const tbody = document.getElementById("overview-table-body");
-      tbody.innerHTML = "";
-
-      const rows = [
-        { name: "IBKR", value: ibkrTotal, pl: ibkrProfit, type: "השקעות" },
-        { name: "FAIR", value: fairTotal, pl: fairProfit, type: "קרנות" },
-        { name: "בנקים", value: banksTotal, pl: 0, type: "בנק" },
-        { name: "קרן השתלמות", value: hishtalmutTotal, pl: hishtalmutProfit, type: "פנסיה" },
-        { name: "חיסכון לכל ילד", value: kidsTotal, pl: kidsProfit, type: "ילדים" }
-      ];
-
-      rows.forEach(acc => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${acc.name}</td>
-          <td>₪${format(acc.value)}</td>
-          <td class="${acc.pl >= 0 ? 'value-positive' : 'value-negative'}">
-            ${acc.pl >= 0 ? '+' : ''}₪${format(acc.pl)}
-          </td>
-          <td>${acc.value > 0 ? ((acc.pl / (acc.value - acc.pl)) * 100).toFixed(2) : 0}%</td>
-          <td>${acc.type}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // גרף
-      new Chart(document.getElementById("overview-chart"), {
-        type: "pie",
-        data: {
-          labels: rows.map(x => x.name),
-          datasets: [{
-            data: rows.map(x => x.value),
-            backgroundColor: [
-              "#6A4FF7", "#0A8A2A", "#00A8A8",
-              "#FF8A3D", "#E84E89"
-            ]
-          }]
-        },
-        options: {
-          plugins: { legend: { position: "bottom" } }
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) {
+          showError("שגיאה בטעינת הנתונים מה‑API (HTTP " + res.status + ")");
+          return;
         }
-      });
+
+        const raw = await res.json();
+        console.log("RAW API DATA:", raw);
+
+        // מנסה לזהות את השורש הנכון של האובייקט
+        const data =
+          (raw && (raw.ibkr || raw.fair || raw.banks || raw.kids || raw.hishtalmut))
+            ? raw
+            : (raw.data || raw.result || raw.payload || raw.overview || {});
+
+        console.log("NORMALIZED DATA:", data);
+
+        const ibkrObj     = data.ibkr || {};
+        const ibkrSummary = ibkrObj.summary || {};
+        const fair        = data.fair || [];
+        const banks       = data.banks || [];
+        const kids        = data.kids || [];
+        const hishtalmut  = data.hishtalmut || {};
+
+        document.getElementById("overview-timestamp").innerText =
+          new Date().toLocaleString("he-IL");
+
+        // חישובי שווי
+        const fairTotal = fair.reduce((s, r) =>
+          s + Number(r["שווי נוכחי (₪)"] || r.valueIls || r.value || 0), 0);
+
+        const banksTotal = banks.reduce((s, r) =>
+          s + Number(r["ערך בש״ח"] || r.valueIls || r.value || 0), 0);
+
+        const kidsTotal = kids.reduce((s, r) =>
+          s + Number(r["שווי נוכחי (₪)"] || r.value || r.valueIls || 0), 0);
+
+        const hishtalmutTotal = Number(hishtalmut.value || 0);
+        const ibkrTotal       = Number(ibkrSummary.totalValueIls || 0);
+
+        const totalValue =
+          fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
+
+        // חישובי רווח
+        const kidsProfit = kids.reduce((s, r) => {
+          const v = Number(r["שווי נוכחי (₪)"] || r.value || 0);
+          const d = Number(r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0);
+          return s + (v - d);
+        }, 0);
+
+        const fairProfit = fair.reduce((s, r) =>
+          s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0), 0);
+
+        const hishtalmutProfit = Number(hishtalmut.profit || 0);
+        const ibkrProfit       = Number(ibkrSummary.totalProfitIls || 0);
+
+        const totalProfit =
+          kidsProfit + fairProfit + hishtalmutProfit + ibkrProfit;
+
+        const totalYield =
+          totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
+
+        // כרטיסים
+        document.getElementById("overview-total-value").innerText =
+          "₪" + format(totalValue);
+
+        document.getElementById("overview-total-pl").innerText =
+          (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+
+        document.getElementById("overview-total-yield").innerText =
+          totalYield.toFixed(2) + "%";
+
+        document.getElementById("overview-total-accounts").innerText = 5;
+
+        // טבלת סיכום
+        const tbody = document.getElementById("overview-table-body");
+        tbody.innerHTML = "";
+
+        const rows = [
+          { name: "IBKR", value: ibkrTotal,       pl: ibkrProfit,       type: "השקעות" },
+          { name: "FAIR", value: fairTotal,       pl: fairProfit,       type: "קרנות" },
+          { name: "בנקים", value: banksTotal,     pl: 0,                type: "בנק" },
+          { name: "קרן השתלמות", value: hishtalmutTotal, pl: hishtalmutProfit, type: "פנסיה" },
+          { name: "חיסכון לכל ילד", value: kidsTotal, pl: kidsProfit,   type: "ילדים" }
+        ];
+
+        rows.forEach(acc => {
+          const tr = document.createElement("tr");
+          const yieldPct =
+            acc.value > 0 ? ((acc.pl / (acc.value - acc.pl)) * 100).toFixed(2) : "0.00";
+
+          tr.innerHTML = `
+            <td>${acc.name}</td>
+            <td>₪${format(acc.value)}</td>
+            <td class="${acc.pl >= 0 ? 'value-positive' : 'value-negative'}">
+              ${acc.pl >= 0 ? '+' : ''}₪${format(acc.pl)}
+            </td>
+            <td>${yieldPct}%</td>
+            <td>${acc.type}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // גרף
+        const ctx = document.getElementById("overview-chart");
+        if (ctx) {
+          new Chart(ctx, {
+            type: "pie",
+            data: {
+              labels: rows.map(x => x.name),
+              datasets: [{
+                data: rows.map(x => x.value),
+                backgroundColor: [
+                  "#6A4FF7", "#0A8A2A", "#00A8A8",
+                  "#FF8A3D", "#E84E89"
+                ]
+              }]
+            },
+            options: {
+              plugins: { legend: { position: "bottom" } }
+            }
+          });
+        }
+
+        // אם אחרי כל זה totalValue עדיין 0 – מציג הודעה כדי שתראה שזה מה‑API
+        if (!totalValue) {
+          showError("ה‑API נטען, אבל כל השדות יצאו 0. בדוק שה‑summary של IBKR וה‑FAIR/בנקים/ילדים לא ריקים.");
+        }
+
+      } catch (err) {
+        console.error(err);
+        showError("שגיאה בטעינת הנתונים מה‑API: " + err);
+      }
     }
 
     // מצב כהה
