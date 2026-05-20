@@ -2,12 +2,12 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>בנקים – Show Me The Money</title>
+  <title>IBKR – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-banks">
+<body class="theme-ibkr">
 
   <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
@@ -15,9 +15,9 @@
   <!-- ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item active"><span class="icon">🏦</span> בנקים</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
@@ -27,8 +27,8 @@
     <!-- כותרת -->
     <div class="page-header">
       <div>
-        <h1>בנקים</h1>
-        <div class="page-subtitle" id="banks-timestamp"></div>
+        <h1>IBKR – פוזיציות</h1>
+        <div class="page-subtitle" id="ibkr-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
@@ -37,23 +37,26 @@
     <div class="cards-row">
 
       <div class="card">
-        <div class="card-title">סה״כ מזומן (₪)</div>
-        <div class="card-main" id="banks-total-cash-ils">₪0</div>
+        <div class="card-title">שווי נוכחי (₪)</div>
+        <div class="card-main" id="ibkr-total-value-ils">₪0</div>
+        <div class="card-sub" id="ibkr-total-value-usd">$0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">סה״כ מזומן ($)</div>
-        <div class="card-main" id="banks-total-cash-usd">$0</div>
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="ibkr-total-pl-ils">₪0</div>
+        <div class="card-sub" id="ibkr-total-pl-usd">$0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">מספר חשבונות</div>
-        <div class="card-main" id="banks-accounts-count">0</div>
+        <div class="card-title">מספר פוזיציות</div>
+        <div class="card-main" id="ibkr-positions-count">0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">שער דולר</div>
-        <div class="card-main" id="banks-usd-rate">0.00</div>
+        <div class="card-title">רווח ממומש</div>
+        <div class="card-main" id="ibkr-realized-ils">₪0</div>
+        <div class="card-sub" id="ibkr-realized-usd">$0</div>
       </div>
 
     </div>
@@ -61,30 +64,34 @@
     <!-- גרף -->
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות לפי חשבון</h3>
-        <canvas id="banks-chart" height="120"></canvas>
+        <h3 style="margin-bottom:15px;">רווח לא ממומש לפי סימול</h3>
+        <canvas id="ibkr-chart" height="120"></canvas>
       </div>
     </div>
 
     <!-- טבלה -->
     <div class="table-wrapper">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h2 style="font-size:16px;margin:0;">חשבונות בנק</h2>
-        <span class="table-caption">נתוני בנקים כפי שמופיעים במערכת</span>
+        <h2 style="font-size:16px;margin:0;">פוזיציות פתוחות</h2>
+        <span class="table-caption">נתוני IBKR מתוך Google Sheets</span>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>שם חשבון</th>
-            <th>יתרה (₪)</th>
-            <th>יתרה ($)</th>
-            <th>בנק</th>
+            <th>סימול</th>
+            <th>שם</th>
+            <th>כמות</th>
+            <th>מחיר $</th>
+            <th>שווי $</th>
+            <th>עלות $</th>
+            <th>רווח $</th>
+            <th>רווח ₪</th>
           </tr>
         </thead>
 
-        <tbody id="banks-table-body">
-          <tr><td colspan="4">טוען נתונים…</td></tr>
+        <tbody id="ibkr-table-body">
+          <tr><td colspan="9">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
@@ -92,82 +99,129 @@
 
   </div>
 
+  <!-- SCRIPT חדש לחלוטין -->
   <script>
-    // נתוני דמו עד שיהיה API אמיתי
-    const banksData = [
-      { name: "Chase Savings", ils: 44453, usd: 12000, bank: "Chase" },
-      { name: "Chase Checking", ils: 50931, usd: 0, bank: "Chase" },
-      { name: "בנק הפועלים", ils: 40187, usd: 0, bank: "Hapoalim" }
-    ];
 
-    const banksUsdRate = 3.65;
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
-    function format(n) {
-      return Number(n).toLocaleString("he-IL");
+    function format(n, d = 2) {
+      return Number(n || 0).toLocaleString("he-IL", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d
+      });
     }
 
-    function loadBanks() {
-      document.getElementById("banks-timestamp").innerText =
+    async function loadIBKR() {
+
+      document.getElementById("ibkr-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const tbody = document.getElementById("banks-table-body");
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const positions = data.ibkr?.positions || [];
+      const summary   = data.ibkr?.summary || {};
+      const realized  = data.ibkr?.realized || [];
+
+      const usdRate = summary.usdRate || 0;
+
+      /***********************
+       * כרטיסים
+       ***********************/
+      document.getElementById("ibkr-total-value-usd").innerText =
+        "$" + format(summary.totalValueUsd);
+
+      document.getElementById("ibkr-total-value-ils").innerText =
+        "₪" + format(summary.totalValueIls);
+
+      document.getElementById("ibkr-total-pl-usd").innerText =
+        "$" + (summary.totalProfitUsd >= 0 ? "+" : "") + format(summary.totalProfitUsd);
+
+      document.getElementById("ibkr-total-pl-ils").innerText =
+        "₪" + (summary.totalProfitIls >= 0 ? "+" : "") + format(summary.totalProfitIls);
+
+      document.getElementById("ibkr-positions-count").innerText =
+        positions.length;
+
+      const realizedUsd = realized.reduce((s, r) => s + Number(r.plUsd || 0), 0);
+      const realizedIls = realized.reduce((s, r) => s + Number(r.plIls || 0), 0);
+
+      document.getElementById("ibkr-realized-usd").innerText =
+        "$" + format(realizedUsd);
+
+      document.getElementById("ibkr-realized-ils").innerText =
+        "₪" + format(realizedIls);
+
+      /***********************
+       * טבלה
+       ***********************/
+      const tbody = document.getElementById("ibkr-table-body");
       tbody.innerHTML = "";
 
-      let totalILS = 0;
-      let totalUSD = 0;
-
-      banksData.forEach(acc => {
-        totalILS += acc.ils;
-        totalUSD += acc.usd;
-
+      positions.forEach(p => {
         const tr = document.createElement("tr");
+
         tr.innerHTML = `
-          <td>${acc.name}</td>
-          <td>₪${format(acc.ils)}</td>
-          <td>$${format(acc.usd)}</td>
-          <td>${acc.bank}</td>
+          <td>${p.symbol}</td>
+          <td>${p.name}</td>
+          <td>${p.qty}</td>
+          <td>$${format(p.priceUsd)}</td>
+          <td>$${format(p.valueUsd)}</td>
+          <td>$${format(p.costUsd)}</td>
+          <td class="${p.plUsd >= 0 ? 'value-positive' : 'value-negative'}">
+            ${p.plUsd >= 0 ? '+' : ''}$${format(p.plUsd)}
+          </td>
+          <td class="${p.plIls >= 0 ? 'value-positive' : 'value-negative'}">
+            ${p.plIls >= 0 ? '+' : ''}₪${format(p.plIls)}
+          </td>
         `;
+
         tbody.appendChild(tr);
       });
 
-      document.getElementById("banks-total-cash-ils").innerText = "₪" + format(totalILS);
-      document.getElementById("banks-total-cash-usd").innerText = "$" + format(totalUSD);
-      document.getElementById("banks-accounts-count").innerText = banksData.length;
-      document.getElementById("banks-usd-rate").innerText = banksUsdRate.toFixed(2);
-
-      // גרף
-      new Chart(document.getElementById("banks-chart"), {
+      /***********************
+       * גרף רווח לא ממומש
+       ***********************/
+      new Chart(document.getElementById("ibkr-chart"), {
         type: "bar",
         data: {
-          labels: banksData.map(x => x.name),
+          labels: positions.map(p => p.symbol),
           datasets: [{
-            label: "יתרה (₪)",
-            data: banksData.map(x => x.ils),
-            backgroundColor: "#00A8A8"
+            label: "רווח לא ממומש ($)",
+            data: positions.map(p => p.plUsd),
+            backgroundColor: positions.map(p =>
+              p.plUsd >= 0 ? "rgba(10,138,42,0.6)" : "rgba(200,0,0,0.6)"
+            )
           }]
         },
         options: {
-          plugins: {
-            legend: { display: false }
-          }
+          plugins: { legend: { display: false } }
         }
       });
+
     }
 
-    // מצב כהה
+    /***********************
+     * מצב כהה
+     ***********************/
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
-      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    // Header דינמי
+    /***********************
+     * Header דינמי
+     ***********************/
     window.addEventListener("scroll", () => {
       const nav = document.querySelector(".top-nav");
       if (window.scrollY > 40) nav.classList.add("shrink");
       else nav.classList.remove("shrink");
     });
 
-    loadBanks();
+    loadIBKR();
+
   </script>
 
 </body>
