@@ -7,195 +7,122 @@ function format(n) {
   });
 }
 
-function setTimestamp() {
-  const now = new Date();
-  const d = now.toLocaleDateString("he-IL");
-  const t = now.toLocaleTimeString("he-IL", { hour12: false });
-  document.getElementById("timestamp").innerText = `${t} · ${d}`;
-}
-
-function setupTabs() {
-  const buttons = document.querySelectorAll(".tab-btn");
-  const contents = {
-    summary: document.getElementById("tab-summary"),
-    ibkr: document.getElementById("tab-ibkr"),
-    fair: document.getElementById("tab-fair"),
-    leumi: document.getElementById("tab-leumi"),
-  };
-
-  buttons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      buttons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      Object.values(contents).forEach((c) => c.classList.remove("active"));
-      const tab = btn.getAttribute("data-tab");
-      contents[tab].classList.add("active");
-    });
-  });
-}
-
 async function loadData() {
-  setTimestamp();
-  setupTabs();
-  const statusEl = document.getElementById("status");
+  const res = await fetch(API_URL);
+  const data = await res.json();
 
-  try {
-    const res = await fetch(API_URL);
-    const data = await res.json();
+  // --- נתונים מה‑API ---
+  const usdRate     = data.usdRate || 0;
+  const ibkrSummary = data.ibkr.summary || {};
+  const ibkrPos     = data.ibkr.positions || [];
+  const fair        = data.fair || [];
+  const banks       = data.banks || [];
+  const kids        = data.kids || [];
+  const hishtalmut  = data.hishtalmut || {};
 
-    statusEl.style.display = "none";
+  // --- IBKR ---
+  const ibkrValue  = Number(ibkrSummary.totalValueIls || 0);
+  const ibkrProfit = Number(ibkrSummary.totalProfitIls || 0);
 
-    let ibkrValue = 0;
-    let unrealized = 0;
-    let realized = 0;
+  // --- FAIR ---
+  const fairValue = fair.reduce(
+    (s, r) => s + Number(r["שווי נוכחי (₪)"] || 0),
+    0
+  );
+  const fairProfit = fair.reduce(
+    (s, r) => s + Number(r["רווח/הפסד (₪)"] || 0),
+    0
+  );
 
-    data.openPositions.forEach((p) => {
-      const unrealBase = (p.unrealizedPL || 0) * (p.fxRateToBase || 1);
-      const realizedBase =
-        (data.realizedBySymbol[p.symbol] || 0) * (p.fxRateToBase || 1);
+  // --- בנקים ---
+  const banksValue = banks.reduce(
+    (s, r) => s + Number(r["ערך בש״ח"] || 0),
+    0
+  );
 
-      unrealized += unrealBase;
-      realized += realizedBase;
-      ibkrValue += (p.positionValue || 0) * (p.fxRateToBase || 1);
-    });
+  // --- חיסכון לכל ילד ---
+  const kidsValue = kids.reduce(
+    (s, r) => s + Number(r["שווי נוכחי (₪)"] || 0),
+    0
+  );
+  const kidsProfit = kids.reduce(
+    (s, r) =>
+      s +
+      (Number(r["שווי נוכחי (₪)"] || 0) -
+        Number(r["הפקדות מצטברות (₪)"] || 0)),
+    0
+  );
 
-    data.cash.forEach((c) => {
-      ibkrValue += (c.endingCash || 0) * (c.fxRateToBase || 1);
-    });
+  // --- קרן השתלמות ---
+  const hishtValue  = Number(hishtalmut.value || 0);
+  const hishtProfit = Number(hishtalmut.profit || 0);
 
-    const totalPL = unrealized + realized;
-    const costApprox = ibkrValue - totalPL;
+  // --- סיכום כולל ---
+  const totalValue =
+    ibkrValue + fairValue + banksValue + kidsValue + hishtValue;
 
-    const fairValue = 0;
-    const leumiValue = 0;
-    const totalPortfolio = ibkrValue;
+  const totalProfit =
+    ibkrProfit + fairProfit + kidsProfit + hishtProfit;
 
-    const ibkrPct = 100;
+  const totalYield =
+    totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
 
-    document.getElementById("ibkrValue").innerText = "₪" + format(ibkrValue);
-    document.getElementById("ibkrPercent").innerText = ibkrPct.toFixed(1) + "%";
+  // --- הצגת נתונים ---
+  document.getElementById("ibkrValue").innerText =
+    "₪" + format(ibkrValue);
+  document.getElementById("ibkrPercent").innerText =
+    ((ibkrValue / totalValue) * 100).toFixed(1) + "%";
 
-    document.getElementById("fairValue").innerText = "₪0";
-    document.getElementById("fairPercent").innerText = "0%";
+  document.getElementById("fairValue").innerText =
+    "₪" + format(fairValue);
+  document.getElementById("fairPercent").innerText =
+    ((fairValue / totalValue) * 100).toFixed(1) + "%";
 
-    document.getElementById("leumiValue").innerText = "₪0";
-    document.getElementById("leumiPercent").innerText = "0%";
+  document.getElementById("leumiValue").innerText =
+    "₪" + format(banksValue);
+  document.getElementById("leumiPercent").innerText =
+    ((banksValue / totalValue) * 100).toFixed(1) + "%";
 
-    document.getElementById("totalValue").innerText =
-      "₪" + format(totalPortfolio);
+  document.getElementById("totalValue").innerText =
+    "₪" + format(totalValue);
 
-    const pctChange = costApprox ? (totalPL / costApprox) * 100 : 0;
+  document.getElementById("totalChangePct").innerText =
+    (totalYield >= 0 ? "+" : "") + totalYield.toFixed(2) + "%";
 
-    document.getElementById("totalChangePct").innerText =
-      (pctChange >= 0 ? "+" : "") + pctChange.toFixed(2) + "%";
+  document.getElementById("totalChangeAbs").innerText =
+    (totalProfit >= 0 ? "+" : "") + format(totalProfit) + "₪";
 
-    document.getElementById("totalChangeAbs").innerText =
-      (totalPL >= 0 ? "+" : "") + format(totalPL) + "₪";
+  document.getElementById("sumTotal").innerText =
+    "₪" + format(totalValue);
+  document.getElementById("sumUnrealized").innerText =
+    "₪" + format(ibkrProfit);
+  document.getElementById("sumRealized").innerText =
+    "₪" + format(0);
+  document.getElementById("sumPL").innerText =
+    "₪" + format(totalProfit);
 
-    document.getElementById("sumTotal").innerText =
-      "₪" + format(totalPortfolio);
-    document.getElementById("sumUnrealized").innerText =
-      "₪" + format(unrealized);
-    document.getElementById("sumRealized").innerText =
-      "₪" + format(realized);
-    document.getElementById("sumPL").innerText = "₪" + format(totalPL);
+  // --- טבלת IBKR ---
+  const tbody = document.getElementById("ibkrTableBody");
+  tbody.innerHTML = "";
 
-    const tbody = document.getElementById("ibkrTableBody");
-    tbody.innerHTML = "";
-
-    data.openPositions.forEach((p) => {
-      const unrealBase = (p.unrealizedPL || 0) * (p.fxRateToBase || 1);
-      const realizedBase =
-        (data.realizedBySymbol[p.symbol] || 0) * (p.fxRateToBase || 1);
-      const totalBase = unrealBase + realizedBase;
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${p.symbol}</td>
-        <td>${p.description}</td>
-        <td>${p.currency}</td>
-        <td>${format(p.quantity)}</td>
-        <td>${format(p.costBasisPrice)}</td>
-        <td>${p.openDateTime || ""}</td>
-        <td>${format(p.fxRateToBase)}</td>
-        <td>${format(p.markPrice)}</td>
-        <td>${format((p.positionValue || 0) * (p.fxRateToBase || 1))}</td>
-        <td>${format(unrealBase)}</td>
-        <td>${format(realizedBase)}</td>
-        <td>${format(totalBase)}</td>
-      `;
-      tbody.appendChild(row);
-    });
-
-    const allocCtx = document
-      .getElementById("allocationChart")
-      .getContext("2d");
-
-    new Chart(allocCtx, {
-      type: "doughnut",
-      data: {
-        labels: ["IBKR"],
-        datasets: [
-          {
-            data: [ibkrValue],
-            backgroundColor: ["#3b82f6"],
-            borderWidth: 0,
-          },
-        ],
-      },
-      options: {
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: { color: "#e5e7eb" },
-          },
-        },
-      },
-    });
-
-    const barCtx = document.getElementById("barChart").getContext("2d");
-
-    new Chart(barCtx, {
-      type: "bar",
-      data: {
-        labels: ["תיק כולל"],
-        datasets: [
-          {
-            label: "עלות כוללת תיק (הערכה)",
-            data: [costApprox],
-            backgroundColor: "#3b82f6",
-          },
-          {
-            label: "שווי תיק נוכחי",
-            data: [totalPortfolio],
-            backgroundColor: "#22c55e",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: { color: "#e5e7eb" },
-          },
-        },
-        scales: {
-          x: {
-            ticks: { color: "#e5e7eb" },
-            grid: { color: "#1f2937" },
-          },
-          y: {
-            ticks: { color: "#e5e7eb" },
-            grid: { color: "#1f2937" },
-          },
-        },
-      },
-    });
-  } catch (err) {
-    statusEl.classList.add("error");
-    statusEl.innerText = "שגיאה בטעינת הנתונים: " + err;
-  }
+  ibkrPos.forEach((p) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${p.symbol}</td>
+      <td>${p.description}</td>
+      <td>${p.currency}</td>
+      <td>${format(p.quantity)}</td>
+      <td>${format(p.costUsd)}</td>
+      <td>${p.openDateTime || ""}</td>
+      <td>${format(p.fxRateToBase)}</td>
+      <td>${format(p.priceUsd)}</td>
+      <td>${format(p.valueIls)}</td>
+      <td>${format(p.plIls)}</td>
+      <td>${format(0)}</td>
+      <td>${format(p.plIls)}</td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
 loadData();
