@@ -1,39 +1,48 @@
-/* ===== בסיס כללי ===== */
-
-body {
-  font-family: "Assistant", Arial, sans-serif;
-  background: #f5f6f8;
-  color: #1a1a1a;
+/* --------------------------------------------------
+   RESET בסיסי
+-------------------------------------------------- */
+* {
   margin: 0;
   padding: 0;
-  direction: rtl;
-  transition: background .25s ease, color .25s ease;
+  box-sizing: border-box;
+  font-family: "Assistant", sans-serif;
 }
 
-.page {
-  padding: 20px;
-  max-width: 1100px;
-  margin: auto;
+body {
+  background: #f5f6fa;
+  color: #222;
+  transition: background 0.3s, color 0.3s;
+  padding-bottom: 80px;
 }
 
-/* ===== ניווט עליון ===== */
+body.dark {
+  background: #1a1b1f;
+  color: #e6e6e6;
+}
 
+/* --------------------------------------------------
+   ניווט עליון
+-------------------------------------------------- */
 .top-nav {
-  background: #ffffff;
-  border-bottom: 2px solid #e3e6ea;
-  padding: 10px 20px;
-  display: flex;
-  gap: 12px;
   position: sticky;
   top: 0;
-  z-index: 100;
-  transition: padding .2s ease, background .2s ease;
+  background: #ffffffcc;
+  backdrop-filter: blur(10px);
+  display: flex;
+  padding: 12px 20px;
+  gap: 20px;
+  border-bottom: 1px solid #ddd;
+  z-index: 1000;
+  transition: padding 0.25s, background 0.25s;
+}
+
+body.dark .top-nav {
+  background: #2a2b31cc;
+  border-bottom-color: #444;
 }
 
 .top-nav.shrink {
   padding: 6px 20px;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(6px);
 }
 
 .nav-item {
@@ -42,209 +51,213 @@ body {
   font-weight: 600;
   padding: 6px 10px;
   border-radius: 6px;
-  display: flex;
-  align-items: center;
-  transition: background .15s ease;
-  font-size: 14px;
+  transition: 0.2s;
 }
 
 .nav-item:hover {
-  background: #eef2f7;
+  background: #ececec;
 }
 
 .nav-item.active {
-  background: #0070F3;
-  color: white;
+  background: #6A4FF7;
+  color: #fff;
 }
 
-.icon {
-  margin-left: 5px;
-  font-size: 16px;
+body.dark .nav-item {
+  color: #ccc;
 }
 
-/* ===== כפתור מצב כהה ===== */
+body.dark .nav-item:hover {
+  background: #3a3b40;
+}
 
+body.dark .nav-item.active {
+  background: #8b74ff;
+}
+
+/* --------------------------------------------------
+   כפתור מצב כהה
+-------------------------------------------------- */
 .theme-btn {
   position: fixed;
-  top: 10px;
-  left: 10px;
-  background: #fff;
-  border: 1px solid #ccc;
-  padding: 6px 10px;
-  border-radius: 6px;
+  bottom: 20px;
+  left: 20px;
+  background: #6A4FF7;
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 50%;
   cursor: pointer;
-  z-index: 200;
-  font-size: 14px;
+  font-size: 20px;
+  z-index: 2000;
+  transition: 0.3s;
 }
 
-/* ===== כותרת ===== */
+.theme-btn:hover {
+  transform: scale(1.1);
+}
+
+body.dark .theme-btn {
+  background: #8b74ff;
+}
+
+/* --------------------------------------------------
+   מבנה דף
+-------------------------------------------------- */
+.page {
+  max-width: 1100px;
+  margin: auto;
+  padding: 25px;
+}
 
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 20px;
+  align-items: center;
+  margin-bottom: 25px;
 }
 
 .page-subtitle {
-  color: #777;
-  font-size: 13px;
+  font-size: 14px;
+  opacity: 0.7;
 }
 
-/* ===== כרטיסים ===== */
-
+/* --------------------------------------------------
+   כרטיסים
+-------------------------------------------------- */
 .cards-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  margin-bottom: 25px;
 }
 
 .card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 14px 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: transform .2s ease, box-shadow .2s ease;
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #00000010;
+  transition: 0.25s;
 }
 
 .card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px #00000020;
+}
+
+body.dark .card {
+  background: #2a2b31;
+  box-shadow: 0 2px 8px #00000040;
 }
 
 .card-title {
-  font-size: 12px;
-  color: #777;
-  margin-bottom: 4px;
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 6px;
 }
 
 .card-main {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
-  margin-bottom: 2px;
 }
 
 .card-sub {
-  font-size: 12px;
-  color: #555;
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 4px;
 }
 
 .card-positive {
-  color: #0a8a2a;
+  color: #0A8A2A;
 }
 
 .card-negative {
-  color: #c0392b;
+  color: #c62828;
 }
 
-/* ===== טבלאות ===== */
-
+/* --------------------------------------------------
+   טבלאות
+-------------------------------------------------- */
 .table-wrapper {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #00000010;
   overflow-x: auto;
+}
+
+body.dark .table-wrapper {
+  background: #2a2b31;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  margin-top: 10px;
 }
 
-th {
-  background: #f7f9fb;
-  padding: 8px;
-  font-weight: 700;
-  border-bottom: 1px solid #e3e6ea;
-  white-space: nowrap;
+thead {
+  background: #f0f0f0;
 }
 
-td {
-  padding: 8px;
-  border-bottom: 1px solid #f0f0f0;
-  white-space: nowrap;
+body.dark thead {
+  background: #3a3b40;
 }
 
-tr:hover td {
-  background: #f4f8ff;
+th, td {
+  padding: 12px;
+  text-align: right;
+  border-bottom: 1px solid #ddd;
 }
 
-.value-positive {
-  color: #0a8a2a;
-  font-weight: 700;
-}
-
-.value-negative {
-  color: #c0392b;
-  font-weight: 700;
-}
-
-.table-caption {
-  font-size: 11px;
-  color: #888;
-}
-
-/* ===== גרפים ===== */
-
-canvas {
-  max-height: 220px !important;
-}
-
-/* ===== מצב כהה ===== */
-
-body.dark {
-  background: #0f1115;
-  color: #e5e5e5;
-}
-
-body.dark .card,
-body.dark .table-wrapper {
-  background: #1a1d23;
-  border-color: #333;
-}
-
-body.dark .top-nav {
-  background: #1a1d23;
+body.dark td, body.dark th {
   border-bottom-color: #444;
 }
 
-body.dark .nav-item {
-  color: #ddd;
+tr:hover td {
+  background: #fafafa;
 }
 
-body.dark .nav-item.active {
-  background: #0070F3;
-  color: white;
+body.dark tr:hover td {
+  background: #3a3b40;
 }
 
-body.dark .theme-btn {
-  background: #1a1d23;
-  color: #fff;
-  border-color: #444;
+.value-positive {
+  color: #0A8A2A;
+  font-weight: 600;
 }
 
-/* ===== מובייל ===== */
+.value-negative {
+  color: #c62828;
+  font-weight: 600;
+}
 
+/* --------------------------------------------------
+   גרפים
+-------------------------------------------------- */
+canvas {
+  width: 100% !important;
+}
+
+/* --------------------------------------------------
+   מובייל
+-------------------------------------------------- */
 @media (max-width: 600px) {
-  .cards-row {
-    grid-template-columns: 1fr;
+  .page {
+    padding: 15px;
   }
 
   .top-nav {
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 10px;
   }
 
-  table {
-    font-size: 11px;
+  .nav-item {
+    padding: 4px 8px;
+    font-size: 14px;
   }
 
-  td, th {
-    padding: 5px;
+  .card-main {
+    font-size: 22px;
   }
 }
