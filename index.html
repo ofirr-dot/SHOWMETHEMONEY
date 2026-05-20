@@ -93,9 +93,7 @@
 
   </div>
 
-  <!-- SCRIPT חדש לחלוטין -->
   <script>
-
     const API_URL =
       "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
@@ -104,7 +102,6 @@
     }
 
     async function loadOverview() {
-
       const res = await fetch(API_URL);
       const data = await res.json();
 
@@ -117,21 +114,21 @@
       document.getElementById("overview-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      /*************** חישובי שווי ***************/
+      // חישובי שווי
       const fairTotal       = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || r.valueIls || 0), 0);
       const banksTotal      = banks.reduce((s, r) => s + Number(r["ערך בש״ח"] || r.valueIls || 0), 0);
       const kidsTotal       = kids.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || r.value || 0), 0);
       const hishtalmutTotal = Number(hishtalmut.value || 0);
-      const ibkrTotal       = ibkr.totalValueIls || 0;
+      const ibkrTotal       = Number(ibkr.totalValueIls || 0);
 
       const totalValue =
         fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
 
-      /*************** חישובי רווח ***************/
+      // חישובי רווח
       const kidsProfit       = kids.reduce((s, r) => s + ((r["שווי נוכחי (₪)"] || r.value || 0) - (r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0)), 0);
       const fairProfit       = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0), 0);
       const hishtalmutProfit = Number(hishtalmut.profit || 0);
-      const ibkrProfit       = ibkr.totalProfitIls || 0;
+      const ibkrProfit       = Number(ibkr.totalProfitIls || 0);
 
       const totalProfit =
         kidsProfit + fairProfit + hishtalmutProfit + ibkrProfit;
@@ -139,7 +136,7 @@
       const totalYield =
         totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
 
-      /*************** הצגת כרטיסים ***************/
+      // כרטיסים
       document.getElementById("overview-total-value").innerText =
         "₪" + format(totalValue);
 
@@ -149,10 +146,9 @@
       document.getElementById("overview-total-yield").innerText =
         totalYield.toFixed(2) + "%";
 
-      document.getElementById("overview-total-accounts").innerText =
-        fair.length + banks.length + kids.length + 1 + 1;
+      document.getElementById("overview-total-accounts").innerText = 5;
 
-      /*************** טבלת סיכום ***************/
+      // טבלת סיכום
       const tbody = document.getElementById("overview-table-body");
       tbody.innerHTML = "";
 
@@ -178,7 +174,7 @@
         tbody.appendChild(tr);
       });
 
-      /*************** גרף ***************/
+      // גרף
       new Chart(document.getElementById("overview-chart"), {
         type: "pie",
         data: {
@@ -197,14 +193,14 @@
       });
     }
 
-    /*************** מצב כהה ***************/
+    // מצב כהה
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
       themeToggle.textContent =
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    /*************** Header דינמי ***************/
+    // Header דינמי
     window.addEventListener("scroll", () => {
       const nav = document.querySelector(".top-nav");
       if (window.scrollY > 40) nav.classList.add("shrink");
@@ -212,7 +208,6 @@
     });
 
     loadOverview();
-
   </script>
 
 </body>
