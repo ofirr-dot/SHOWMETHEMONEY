@@ -1,0 +1,244 @@
+// === הגדרות טלגרם ===
+const TELEGRAM_TOKEN = "7750837422:AAHHg1EG5OuaHHMXWis1V2qanF2DvEsN_9A";
+const TELEGRAM_CHAT_ID = "540161572";
+
+// === שליחת הודעה לטלגרם ===
+function sendTelegram(msg) {
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+  const payload = {
+    chat_id: TELEGRAM_CHAT_ID,
+    text: msg,
+    parse_mode: "HTML"
+  };
+
+  UrlFetchApp.fetch(url, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload)
+  });
+}
+
+// === API ראשי – מחזיר את כל הנתונים ל‑Dashboard ולשאר הדפים ===
+// אם כבר יש לך buildApiResponse – תשאיר את שלך ותעדכן רק אם צריך.
+function doGet(e) {
+  const mode = (e && e.parameter && e.parameter.mode) || "api";
+  if (mode === "api") {
+    const data = buildApiResponse();
+    return ContentService
+      .createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput("OK");
+}
+
+function buildApiResponse() {
+  const ss = SpreadsheetApp.getActive();
+
+  // --- IBKR ---
+  const shIbkrPos = ss.getSheetByName("IBKR – פוזיציות");
+  const shIbkrRealized = ss.getSheetByName("IBKR – רווח ממומש");
+  const shIbkrSettings = ss.getSheetByName("הגדרות");
+
+  const usdRate = Number(shIbkrSettings.getRange("B2").getValue() || 0);
+
+  const posRange = shIbkrPos.getDataRange().getValues();
+  const posHeader = posRange.shift();
+  const positions = posRange
+    .filter(r => r.join("") !== "")
+    .map(r => {
+      const obj = {};
+      posHeader.forEach((h, i) => obj[h] = r[i]);
+      const qty = Number(obj["כמות"] || 0);
+      const price = Number(obj["מחיר נוכחי $"] || 0);
+      const cost = Number(obj["עלות קנייה $"] || 0);
+      const valueUsd = qty * price;
+      const costUsd = qty * cost;
+      const plUsd = valueUsd - costUsd;
+      const plIls = plUsd * usdRate;
+      return {
+        symbol: obj["סימול"] || "",
+        name: obj["שם"] || "",
+        qty,
+        priceUsd: price,
+        valueUsd,
+        costUsd,
+        plUsd,
+        plIls
+      };
+    });
+
+  const totalValueUsd = positions.reduce((s, p) => s + p.valueUsd, 0);
+  const totalProfitUsd = positions.reduce((s, p) => s + p.plUsd, 0);
+  const totalValueIls = totalValueUsd * usdRate;
+  const totalProfitIls = totalProfitUsd * usdRate;
+
+  const realizedRange = shIbkrRealized.getDataRange().getValues();
+  const realizedHeader = realizedRange.shift();
+  const realized = realizedRange
+    .filter(r => r.join("") !== "")
+    .map(r => {
+      const obj = {};
+      realizedHeader.forEach((h, i) => obj[h] = r[i]);
+      const plUsd = Number(obj["רווח $"] || 0);
+      const plIls = plUsd * usdRate;
+      return {
+        date: obj["תאריך"] || "",
+        symbol: obj["סימול"] || "",
+        plUsd,
+        plIls
+      };
+    });
+
+  // --- FAIR ---
+  const shFair = ss.getSheetByName("FAIR – קרנות");
+  const fairRange = shFair.getDataRange().getValues();
+  const fairHeader = fairRange.shift();
+  const fair = fairRange
+    .filter(r => r.join("") !== "")
+    .map(r => {
+      const obj = {};
+      fairHeader.forEach((h, i) => obj[h] = r[i]);
+      return obj;
+    });
+
+  // --- בנקים ---
+  const shBanks = ss.getSheetByName("בנקים");
+  const banksRange = shBanks.getDataRange().getValues();
+  const banksHeader = banksRange.shift();
+  const banks = banksRange
+    .filter(r => r.join("") !== "")
+    .map(r => {
+      const obj = {};
+      banksHeader.forEach((h, i) => obj[h] = r[i]);
+      return obj;
+    });
+
+  // --- חיסכון לכל ילד ---
+  const shKids = ss.getSheetByName("חיסכון לכל ילד");
+  const kidsRange = shKids.getDataRange().getValues();
+  const kidsHeader = kidsRange.shift();
+  const kids = kidsRange
+    .filter(r => r.join("") !== "")
+    .map(r => {
+      const obj = {};
+      kidsHeader.forEach((h, i) => obj[h] = r[i]);
+      return obj;
+    });
+
+  // --- קרן השתלמות ---
+  const shHishtalmut = ss.getSheetByName("קרן השתלמות");
+  const hVals = shHishtalmut.getRange("A2:F2").getValues()[0];
+  const hishtalmut = {
+    date: hVals[0],
+    value: Number(hVals[1] || 0),
+    deposits: Number(hVals[2] || 0),
+    profit: Number(hVals[3] || 0),
+    yieldPct: Number(hVals[4] || 0),
+    notes: hVals[5] || ""
+  };
+
+  return {
+    usdRate,
+    ibkr: {
+      summary: {
+        usdRate,
+        totalValueUsd,
+        totalValueIls,
+        totalProfitUsd,
+        totalProfitIls
+      },
+      positions,
+      realized
+    },
+    fair,
+    banks,
+    kids,
+    hishtalmut
+  };
+}
+
+// === מערכת התראות טלגרם ===
+function runAlerts() {
+  const data = buildApiResponse();
+
+  const ibkr = data.ibkr.summary;
+  const fair = data.fair;
+  const banks = data.banks;
+  const kids = data.kids;
+  const hishtalmut = data.hishtalmut;
+  const usdRate = data.usdRate;
+
+  let alerts = [];
+
+  const totalValue =
+    ibkr.totalValueIls +
+    fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0) +
+    banks.reduce((s, r) => s + Number(r["ערך בש״ח"] || 0), 0) +
+    kids.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0) +
+    Number(hishtalmut.value || 0);
+
+  const ss = SpreadsheetApp.getActive();
+  const sheet = ss.getSheetByName("Alerts") || ss.insertSheet("Alerts");
+
+  if (!sheet.getRange("A1").getValue()) {
+    sheet.getRange("A1").setValue("LastTotalValue");
+    sheet.getRange("A2").setValue("LastUsdRate");
+    sheet.getRange("A3").setValue("LastKidsDeposits");
+    sheet.getRange("A4").setValue("LastRealized");
+    sheet.getRange("B1:B4").setValues([[0],[0],[0],[0]]);
+  }
+
+  const lastValue = Number(sheet.getRange("B1").getValue() || 0);
+  const diff = totalValue - lastValue;
+  const pct = lastValue ? (diff / lastValue) * 100 : 0;
+
+  if (Math.abs(pct) >= 2) {
+    alerts.push(
+      `📉 <b>שינוי חד בשווי התיק</b>\nשינוי: ${pct.toFixed(2)}%\nסכום: ${diff.toLocaleString()} ₪`
+    );
+  }
+  sheet.getRange("B1").setValue(totalValue);
+
+  if (Math.abs(ibkr.totalProfitIls) > 15000) {
+    alerts.push(
+      `💹 <b>רווח חריג ב־IBKR</b>\nרווח: ${ibkr.totalProfitIls.toLocaleString()} ₪`
+    );
+  }
+
+  const lastUsd = Number(sheet.getRange("B2").getValue() || 0);
+  const usdDiff = usdRate - lastUsd;
+  if (Math.abs(usdDiff) >= 0.05) {
+    alerts.push(
+      `💲 <b>שינוי בשער הדולר</b>\nשער חדש: ${usdRate}\nשינוי: ${usdDiff.toFixed(3)}`
+    );
+  }
+  sheet.getRange("B2").setValue(usdRate);
+
+  const lastKidsDeposits = Number(sheet.getRange("B3").getValue() || 0);
+  const currentKidsDeposits = kids.reduce(
+    (s, r) => s + Number(r["הפקדות מצטברות (₪)"] || 0),
+    0
+  );
+  if (currentKidsDeposits > lastKidsDeposits) {
+    alerts.push(
+      `👶 <b>הפקדה חדשה בחיסכון לכל ילד</b>\nסה״כ הפקדות: ${currentKidsDeposits.toLocaleString()} ₪`
+    );
+  }
+  sheet.getRange("B3").setValue(currentKidsDeposits);
+
+  const realizedTotal = data.ibkr.realized.reduce(
+    (s, r) => s + Number(r.plIls || 0),
+    0
+  );
+  const lastRealized = Number(sheet.getRange("B4").getValue() || 0);
+  if (realizedTotal > lastRealized) {
+    alerts.push(
+      `🏁 <b>רווח ממומש חדש ב־IBKR</b>\nסה״כ ממומש: ${realizedTotal.toLocaleString()} ₪`
+    );
+  }
+  sheet.getRange("B4").setValue(realizedTotal);
+
+  if (alerts.length > 0) {
+    sendTelegram(alerts.join("\n\n"));
+  }
+}
