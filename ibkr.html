@@ -54,9 +54,9 @@
       </div>
 
       <div class="card">
-        <div class="card-title">שינוי יומי</div>
-        <div class="card-main" id="ibkr-daily-change-ils">₪0</div>
-        <div class="card-sub" id="ibkr-daily-change-pct">0%</div>
+        <div class="card-title">רווח ממומש</div>
+        <div class="card-main" id="ibkr-realized-ils">₪0</div>
+        <div class="card-sub" id="ibkr-realized-usd">$0</div>
       </div>
 
     </div>
@@ -64,7 +64,7 @@
     <!-- גרף -->
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">ביצועי IBKR</h3>
+        <h3 style="margin-bottom:15px;">רווח לא ממומש לפי סימול</h3>
         <canvas id="ibkr-chart" height="120"></canvas>
       </div>
     </div>
@@ -73,21 +73,20 @@
     <div class="table-wrapper">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <h2 style="font-size:16px;margin:0;">פוזיציות פתוחות</h2>
-        <span class="table-caption">נתוני IBKR בזמן אמת</span>
+        <span class="table-caption">נתוני IBKR מתוך Google Sheets</span>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>תאריך קנייה</th>
-            <th>עלות קנייה $</th>
-            <th>שווי נוכחי $</th>
-            <th>שער דולר</th>
+            <th>סימול</th>
+            <th>שם</th>
+            <th>כמות</th>
+            <th>מחיר $</th>
+            <th>שווי $</th>
+            <th>עלות $</th>
             <th>רווח $</th>
             <th>רווח ₪</th>
-            <th>סימול</th>
-            <th>תיאור</th>
-            <th>שנה</th>
           </tr>
         </thead>
 
@@ -100,7 +99,9 @@
 
   </div>
 
+  <!-- SCRIPT חדש לחלוטין -->
   <script>
+
     const API_URL =
       "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
@@ -111,105 +112,108 @@
       });
     }
 
-    function setTimestamp() {
+    async function loadIBKR() {
+
       document.getElementById("ibkr-timestamp").innerText =
         new Date().toLocaleString("he-IL");
-    }
-
-    async function loadIBKR() {
-      setTimestamp();
 
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const positions = data.openPositions || [];
-      const cash = data.cash || [];
+      const positions = data.ibkr?.positions || [];
+      const summary   = data.ibkr?.summary || {};
+      const realized  = data.ibkr?.realized || [];
 
+      const usdRate = summary.usdRate || 0;
+
+      /***********************
+       * כרטיסים
+       ***********************/
+      document.getElementById("ibkr-total-value-usd").innerText =
+        "$" + format(summary.totalValueUsd);
+
+      document.getElementById("ibkr-total-value-ils").innerText =
+        "₪" + format(summary.totalValueIls);
+
+      document.getElementById("ibkr-total-pl-usd").innerText =
+        "$" + (summary.totalProfitUsd >= 0 ? "+" : "") + format(summary.totalProfitUsd);
+
+      document.getElementById("ibkr-total-pl-ils").innerText =
+        "₪" + (summary.totalProfitIls >= 0 ? "+" : "") + format(summary.totalProfitIls);
+
+      document.getElementById("ibkr-positions-count").innerText =
+        positions.length;
+
+      const realizedUsd = realized.reduce((s, r) => s + Number(r.plUsd || 0), 0);
+      const realizedIls = realized.reduce((s, r) => s + Number(r.plIls || 0), 0);
+
+      document.getElementById("ibkr-realized-usd").innerText =
+        "$" + format(realizedUsd);
+
+      document.getElementById("ibkr-realized-ils").innerText =
+        "₪" + format(realizedIls);
+
+      /***********************
+       * טבלה
+       ***********************/
       const tbody = document.getElementById("ibkr-table-body");
       tbody.innerHTML = "";
 
-      let totalValueUSD = 0;
-      let totalValueILS = 0;
-      let totalPLUSD = 0;
-      let totalPLILS = 0;
-
       positions.forEach(p => {
-        const qty = Number(p.quantity);
-        const cost = qty * Number(p.costBasisPrice);
-        const value = qty * Number(p.markPrice);
-        const fx = Number(p.fxRateToBase);
-        const plUSD = value - cost;
-        const plILS = plUSD * fx;
-
-        totalValueUSD += value;
-        totalValueILS += value * fx;
-        totalPLUSD += plUSD;
-        totalPLILS += plILS;
-
-        const date = p.openDateTime?.split(" ")[0] || "-";
-        const year = date.split("/")[2] || "";
-
         const tr = document.createElement("tr");
+
         tr.innerHTML = `
-          <td>${date}</td>
-          <td>${format(cost)}</td>
-          <td>${format(value)}</td>
-          <td>${format(fx, 4)}</td>
-          <td class="${plUSD >= 0 ? 'value-positive' : 'value-negative'}">
-            ${plUSD >= 0 ? '+' : ''}${format(plUSD)}
-          </td>
-          <td class="${plILS >= 0 ? 'value-positive' : 'value-negative'}">
-            ${plILS >= 0 ? '+' : ''}${format(plILS)}
-          </td>
           <td>${p.symbol}</td>
-          <td>${p.description}</td>
-          <td>${year}</td>
+          <td>${p.name}</td>
+          <td>${p.qty}</td>
+          <td>$${format(p.priceUsd)}</td>
+          <td>$${format(p.valueUsd)}</td>
+          <td>$${format(p.costUsd)}</td>
+          <td class="${p.plUsd >= 0 ? 'value-positive' : 'value-negative'}">
+            ${p.plUsd >= 0 ? '+' : ''}$${format(p.plUsd)}
+          </td>
+          <td class="${p.plIls >= 0 ? 'value-positive' : 'value-negative'}">
+            ${p.plIls >= 0 ? '+' : ''}₪${format(p.plIls)}
+          </td>
         `;
+
         tbody.appendChild(tr);
       });
 
-      cash.forEach(c => {
-        totalValueILS += Number(c.endingCash) * Number(c.fxRateToBase);
-      });
-
-      document.getElementById("ibkr-total-value-usd").innerText = "$" + format(totalValueUSD);
-      document.getElementById("ibkr-total-value-ils").innerText = "₪" + format(totalValueILS);
-
-      document.getElementById("ibkr-total-pl-usd").innerText =
-        "$" + (totalPLUSD >= 0 ? "+" : "") + format(totalPLUSD);
-      document.getElementById("ibkr-total-pl-ils").innerText =
-        "₪" + (totalPLILS >= 0 ? "+" : "") + format(totalPLILS);
-
-      document.getElementById("ibkr-positions-count").innerText = positions.length;
-
-      // גרף
+      /***********************
+       * גרף רווח לא ממומש
+       ***********************/
       new Chart(document.getElementById("ibkr-chart"), {
-        type: "line",
+        type: "bar",
         data: {
           labels: positions.map(p => p.symbol),
           datasets: [{
-            label: "רווח $",
-            data: positions.map(p => {
-              const qty = Number(p.quantity);
-              const cost = qty * Number(p.costBasisPrice);
-              const value = qty * Number(p.markPrice);
-              return value - cost;
-            }),
-            borderColor: "#0A8A2A",
-            backgroundColor: "rgba(10,138,42,0.2)",
-            tension: 0.3
+            label: "רווח לא ממומש ($)",
+            data: positions.map(p => p.plUsd),
+            backgroundColor: positions.map(p =>
+              p.plUsd >= 0 ? "rgba(10,138,42,0.6)" : "rgba(200,0,0,0.6)"
+            )
           }]
+        },
+        options: {
+          plugins: { legend: { display: false } }
         }
       });
+
     }
 
-    // מצב כהה
+    /***********************
+     * מצב כהה
+     ***********************/
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
-      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    // Header דינמי
+    /***********************
+     * Header דינמי
+     ***********************/
     window.addEventListener("scroll", () => {
       const nav = document.querySelector(".top-nav");
       if (window.scrollY > 40) nav.classList.add("shrink");
@@ -217,6 +221,7 @@
     });
 
     loadIBKR();
+
   </script>
 
 </body>
