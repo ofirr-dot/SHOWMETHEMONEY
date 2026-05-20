@@ -2,12 +2,12 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>קרן השתלמות – Show Me The Money</title>
+  <title>חיסכון לכל ילד – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-hishtalmut">
+<body class="theme-kids">
 
   <button id="themeToggle" class="theme-btn">🌙</button>
 
@@ -16,16 +16,16 @@
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item active"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item active"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
 
   <div class="page">
 
     <div class="page-header">
       <div>
-        <h1>קרן השתלמות</h1>
-        <div class="page-subtitle" id="hishtalmut-timestamp"></div>
+        <h1>חיסכון לכל ילד</h1>
+        <div class="page-subtitle" id="kids-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
@@ -33,44 +33,45 @@
     <div class="cards-row">
 
       <div class="card">
-        <div class="card-title">שווי נוכחי</div>
-        <div class="card-main" id="hishtalmut-value">₪0</div>
+        <div class="card-title">שווי כולל</div>
+        <div class="card-main" id="kids-total-value">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">רווח/הפסד</div>
-        <div class="card-main card-positive" id="hishtalmut-pl">₪0</div>
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="kids-total-pl">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">תשואה</div>
-        <div class="card-main" id="hishtalmut-yield">0%</div>
+        <div class="card-title">מספר ילדים</div>
+        <div class="card-main" id="kids-count">0</div>
       </div>
 
     </div>
 
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות</h3>
-        <canvas id="hishtalmut-chart" height="120"></canvas>
+        <h3 style="margin-bottom:15px;">התפלגות לפי ילד</h3>
+        <canvas id="kids-chart" height="120"></canvas>
       </div>
     </div>
 
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">פרטי הקרן</h2>
+      <h2 style="font-size:16px;margin-bottom:10px;">רשימת ילדים</h2>
 
       <table>
         <thead>
           <tr>
-            <th>שם הקרן</th>
+            <th>שם</th>
             <th>שווי נוכחי (₪)</th>
+            <th>הפקדות מצטברות (₪)</th>
             <th>רווח/הפסד (₪)</th>
             <th>תשואה</th>
           </tr>
         </thead>
 
-        <tbody id="hishtalmut-table-body">
-          <tr><td colspan="4">טוען נתונים…</td></tr>
+        <tbody id="kids-table-body">
+          <tr><td colspan="5">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
@@ -88,50 +89,71 @@
       });
     }
 
-    async function loadHishtalmut() {
+    async function loadKids() {
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const h = data.hishtalmut || {};
+      const kids = data.kids || [];
 
-      document.getElementById("hishtalmut-timestamp").innerText =
+      document.getElementById("kids-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const value = Number(h.value || 0);
-      const pl = Number(h.profit || 0);
-      const yieldPct =
-        value > 0 ? (pl / (value - pl)) * 100 : 0;
+      const totalValue = kids.reduce(
+        (s, r) => s + Number(r["שווי נוכחי (₪)"] || r.value || 0),
+        0
+      );
 
-      document.getElementById("hishtalmut-value").innerText =
-        "₪" + format(value);
+      const totalProfit = kids.reduce(
+        (s, r) =>
+          s +
+          (Number(r["שווי נוכחי (₪)"] || r.value || 0) -
+           Number(r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0)),
+        0
+      );
 
-      document.getElementById("hishtalmut-pl").innerText =
-        (pl >= 0 ? "+" : "") + "₪" + format(pl);
+      document.getElementById("kids-total-value").innerText =
+        "₪" + format(totalValue);
 
-      document.getElementById("hishtalmut-yield").innerText =
-        yieldPct.toFixed(2) + "%";
+      document.getElementById("kids-total-pl").innerText =
+        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
 
-      const tbody = document.getElementById("hishtalmut-table-body");
-      tbody.innerHTML = `
-        <tr>
-          <td>${h.name || "—"}</td>
+      document.getElementById("kids-count").innerText = kids.length;
+
+      const tbody = document.getElementById("kids-table-body");
+      tbody.innerHTML = "";
+
+      kids.forEach(k => {
+        const value = Number(k["שווי נוכחי (₪)"] || k.value || 0);
+        const deposits = Number(k["הפקדות מצטברות (₪)"] || k.totalDeposits || 0);
+        const pl = value - deposits;
+        const yieldPct =
+          value > 0 ? ((pl / deposits) * 100).toFixed(2) : "0.00";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${k["שם"] || k.name || "—"}</td>
           <td>₪${format(value)}</td>
+          <td>₪${format(deposits)}</td>
           <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
             ${pl >= 0 ? '+' : ''}₪${format(pl)}
           </td>
-          <td>${yieldPct.toFixed(2)}%</td>
-        </tr>
-      `;
+          <td>${yieldPct}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
 
-      const ctx = document.getElementById("hishtalmut-chart");
+      const ctx = document.getElementById("kids-chart");
       if (ctx) {
         new Chart(ctx, {
-          type: "doughnut",
+          type: "pie",
           data: {
-            labels: ["שווי נוכחי", "רווח"],
+            labels: kids.map(k => k["שם"] || k.name || "—"),
             datasets: [{
-              data: [value - pl, pl],
-              backgroundColor: ["#6A4FF7", "#0A8A2A"]
+              data: kids.map(k => Number(k["שווי נוכחי (₪)"] || k.value || 0)),
+              backgroundColor: [
+                "#6A4FF7", "#0A8A2A", "#00A8A8",
+                "#FF8A3D", "#E84E89", "#4A90E2"
+              ]
             }]
           },
           options: {
@@ -147,7 +169,7 @@
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    loadHishtalmut();
+    loadKids();
   </script>
 
 </body>
