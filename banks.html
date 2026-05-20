@@ -2,20 +2,20 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>FAIR – Show Me The Money</title>
+  <title>בנקים – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-fair">
+<body class="theme-banks">
 
   <button id="themeToggle" class="theme-btn">🌙</button>
 
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item active"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item active"><span class="icon">🏦</span> בנקים</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
@@ -24,8 +24,8 @@
 
     <div class="page-header">
       <div>
-        <h1>FAIR</h1>
-        <div class="page-subtitle" id="fair-timestamp"></div>
+        <h1>בנקים</h1>
+        <div class="page-subtitle" id="banks-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
@@ -34,43 +34,37 @@
 
       <div class="card">
         <div class="card-title">שווי כולל</div>
-        <div class="card-main" id="fair-total-value">₪0</div>
+        <div class="card-main" id="banks-total-value">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="fair-total-pl">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">תשואה</div>
-        <div class="card-main" id="fair-total-yield">0%</div>
+        <div class="card-title">מספר חשבונות</div>
+        <div class="card-main" id="banks-total-accounts">0</div>
       </div>
 
     </div>
 
     <div class="cards-row">
       <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות לפי קרן</h3>
-        <canvas id="fair-chart" height="120"></canvas>
+        <h3 style="margin-bottom:15px;">התפלגות לפי בנק</h3>
+        <canvas id="banks-chart" height="120"></canvas>
       </div>
     </div>
 
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">רשימת קרנות FAIR</h2>
+      <h2 style="font-size:16px;margin-bottom:10px;">רשימת חשבונות בנק</h2>
 
       <table>
         <thead>
           <tr>
-            <th>שם הקרן</th>
+            <th>בנק</th>
+            <th>סוג חשבון</th>
             <th>שווי נוכחי (₪)</th>
-            <th>רווח/הפסד (₪)</th>
-            <th>תשואה</th>
           </tr>
         </thead>
 
-        <tbody id="fair-table-body">
-          <tr><td colspan="4">טוען נתונים…</td></tr>
+        <tbody id="banks-table-body">
+          <tr><td colspan="3">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
@@ -88,66 +82,49 @@
       });
     }
 
-    async function loadFAIR() {
+    async function loadBanks() {
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const fair = data.fair || [];
+      const banks = data.banks || [];
 
-      document.getElementById("fair-timestamp").innerText =
+      document.getElementById("banks-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const totalValue = fair.reduce(
-        (s, r) => s + Number(r["שווי נוכחי (₪)"] || r.valueIls || 0),
+      const totalValue = banks.reduce(
+        (s, r) => s + Number(r["ערך בש״ח"] || r.valueIls || 0),
         0
       );
 
-      const totalProfit = fair.reduce(
-        (s, r) => s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0),
-        0
-      );
-
-      const totalYield =
-        totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
-
-      document.getElementById("fair-total-value").innerText =
+      document.getElementById("banks-total-value").innerText =
         "₪" + format(totalValue);
 
-      document.getElementById("fair-total-pl").innerText =
-        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+      document.getElementById("banks-total-accounts").innerText =
+        banks.length;
 
-      document.getElementById("fair-total-yield").innerText =
-        totalYield.toFixed(2) + "%";
-
-      const tbody = document.getElementById("fair-table-body");
+      const tbody = document.getElementById("banks-table-body");
       tbody.innerHTML = "";
 
-      fair.forEach(f => {
-        const value = Number(f["שווי נוכחי (₪)"] || f.valueIls || 0);
-        const pl = Number(f["רווח/הפסד (₪)"] || f.plIls || 0);
-        const yieldPct =
-          value > 0 ? ((pl / (value - pl)) * 100).toFixed(2) : "0.00";
+      banks.forEach(b => {
+        const value = Number(b["ערך בש״ח"] || b.valueIls || 0);
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${f["שם הקרן"] || f.name || "—"}</td>
+          <td>${b["בנק"] || b.bank || "—"}</td>
+          <td>${b["סוג חשבון"] || b.type || "—"}</td>
           <td>₪${format(value)}</td>
-          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
-            ${pl >= 0 ? '+' : ''}₪${format(pl)}
-          </td>
-          <td>${yieldPct}%</td>
         `;
         tbody.appendChild(tr);
       });
 
-      const ctx = document.getElementById("fair-chart");
+      const ctx = document.getElementById("banks-chart");
       if (ctx) {
         new Chart(ctx, {
           type: "pie",
           data: {
-            labels: fair.map(f => f["שם הקרן"] || f.name || "—"),
+            labels: banks.map(b => b["בנק"] || b.bank || "—"),
             datasets: [{
-              data: fair.map(f => Number(f["שווי נוכחי (₪)"] || f.valueIls || 0)),
+              data: banks.map(b => Number(b["ערך בש״ח"] || b.valueIls || 0)),
               backgroundColor: [
                 "#6A4FF7", "#0A8A2A", "#00A8A8",
                 "#FF8A3D", "#E84E89", "#4A90E2"
@@ -167,7 +144,7 @@
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    loadFAIR();
+    loadBanks();
   </script>
 
 </body>
