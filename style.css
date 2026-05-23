@@ -257,6 +257,70 @@ canvas {
     font-size: 14px;
   }
 
+   /* ===== טבלת רווח ממומש ===== */
+
+.realized-table-wrapper {
+  margin-top: 25px;
+  overflow-x: auto;
+}
+
+#realized-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  background: #ffffff10;
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#realized-table thead {
+  background: #1e1e1e;
+  color: #fff;
+}
+
+#realized-table th,
+#realized-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #ffffff20;
+  white-space: nowrap;
+}
+
+#realized-table tbody tr:hover {
+  background: #ffffff15;
+}
+
+.value-positive {
+  color: #00c853;
+  font-weight: bold;
+}
+
+.value-negative {
+  color: #ff5252;
+  font-weight: bold;
+}
+
+/* עמודות מאוזנות */
+#realized-table th:nth-child(1),
+#realized-table td:nth-child(1) {
+  width: 60px;
+}
+
+#realized-table th:nth-child(2),
+#realized-table td:nth-child(2) {
+  width: 80px;
+}
+
+#realized-table th:nth-child(3),
+#realized-table td:nth-child(3) {
+  width: 220px;
+}
+
+#realized-table th:nth-child(4),
+#realized-table td:nth-child(4) {
+  width: 120px;
+}
+
   .card-main {
     font-size: 22px;
   }
