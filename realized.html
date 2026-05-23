@@ -15,7 +15,6 @@
       <table id="realized-table">
         <thead>
           <tr>
-            <th>שנה</th>
             <th>סימבול</th>
             <th>תיאור</th>
             <th>תאריך מכירה</th>
@@ -27,6 +26,14 @@
           </tr>
         </thead>
         <tbody></tbody>
+
+        <tfoot>
+          <tr id="realized-summary-row">
+            <td colspan="8" style="text-align:center; font-weight:bold; padding:15px;">
+              טוען סיכום…
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
@@ -38,14 +45,19 @@
 
       const rows = data.realized;
       const tbody = document.querySelector("#realized-table tbody");
+      const summaryRow = document.getElementById("realized-summary-row");
+
+      let totalProfitUsd = 0;
+      let totalProfitIls = 0;
 
       rows.forEach(r => {
         const tr = document.createElement("tr");
-
         const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
 
+        totalProfitUsd += r.profitUsd;
+        totalProfitIls += r.profitIls;
+
         tr.innerHTML = `
-          <td>${r.year}</td>
           <td>${r.symbol}</td>
           <td>${r.description}</td>
           <td>${r.saleDate}</td>
@@ -58,6 +70,14 @@
 
         tbody.appendChild(tr);
       });
+
+      summaryRow.innerHTML = `
+        <td colspan="8" style="text-align:center; font-size:18px; padding:15px;">
+          <span style="color:#00c853; font-weight:bold;">
+            סה״כ רווח ממומש: $${totalProfitUsd.toLocaleString()} · ₪${totalProfitIls.toLocaleString()}
+          </span>
+        </td>
+      `;
     }
 
     loadData();
