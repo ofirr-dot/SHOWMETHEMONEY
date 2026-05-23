@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>מס רווחי הון</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <h1>🧾 מס רווחי הון</h1>
+    <p>חישוב מס על בסיס רווחים ממומשים</p>
+
+    <div class="tax-box">
+      <h2>סיכום מס</h2>
+      <div id="tax-summary" style="font-size:20px; font-weight:bold; margin-top:10px;">
+        טוען נתונים…
+      </div>
+    </div>
+
+    <div class="realized-table-wrapper">
+      <table id="tax-table">
+        <thead>
+          <tr>
+            <th>סימבול</th>
+            <th>תיאור</th>
+            <th>רווח (₪)</th>
+            <th>מס 25% (₪)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+
+        <tfoot>
+          <tr id="tax-summary-row">
+            <td colspan="4" style="text-align:center; padding:15px; font-weight:bold;">
+              טוען סיכום…
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadTax() {
+      const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
+      const data = await res.json();
+
+      const rows = data.realized;
+      const tbody = document.querySelector("#tax-table tbody");
+      const summaryRow = document.getElementById("tax-summary-row");
+      const taxSummary = document.getElementById("tax-summary");
+
+      let totalProfit = 0;
+      let totalTax = 0;
+
+      rows.forEach(r => {
+        const tax = r.profitIls * 0.25;
+        totalProfit += r.profitIls;
+        totalTax += tax;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.symbol}</td>
+          <td>${r.description}</td>
+          <td class="value-positive">${r.profitIls.toLocaleString()}</td>
+          <td class="value-negative">${tax.toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      summaryRow.innerHTML = `
+        <td colspan="4" style="text-align:center; padding:15px; font-size:18px;">
+          סה״כ רווח: ₪${totalProfit.toLocaleString()} · מס לתשלום: ₪${totalTax.toLocaleString()}
+        </td>
+      `;
+
+      taxSummary.innerHTML = `
+        רווח כולל: <span class="value-positive">₪${totalProfit.toLocaleString()}</span><br>
+        מס 25% לתשלום: <span class="value-negative">₪${totalTax.toLocaleString()}</span>
+      `;
+    }
+
+    loadTax();
+  </script>
+</body>
+</html>
