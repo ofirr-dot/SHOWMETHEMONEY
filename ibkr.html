@@ -2,140 +2,103 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>IBKR – Show Me The Money</title>
+  <title>IBKR – פוזיציות פתוחות</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="theme-ibkr">
+<body>
+  <div class="container">
+    <h1>📈 פוזיציות פתוחות – IBKR</h1>
+    <p>נתונים חיים מה‑IBKR FLEX API</p>
 
-  <button id="themeToggle" class="theme-btn">🌙</button>
-
-  <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-  </nav>
-
-  <div class="page">
-
-    <div class="page-header">
-      <div>
-        <h1>IBKR</h1>
-        <div class="page-subtitle" id="ibkr-timestamp"></div>
-      </div>
-      <div class="page-subtitle">Ofir</div>
-    </div>
-
-    <div class="cards-row">
-
-      <div class="card">
-        <div class="card-title">שווי תיק</div>
-        <div class="card-main" id="ibkr-total-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="ibkr-total-pl">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">תשואה</div>
-        <div class="card-main" id="ibkr-total-yield">0%</div>
-      </div>
-
-    </div>
-
-    <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">פוזיציות פתוחות</h2>
-
-      <table>
+    <div class="realized-table-wrapper">
+      <table id="ibkr-table">
         <thead>
           <tr>
-            <th>סימול</th>
+            <th>סימבול</th>
             <th>שם</th>
             <th>כמות</th>
-            <th>מחיר קנייה</th>
-            <th>מחיר נוכחי</th>
+            <th>מחיר קנייה ($)</th>
+            <th>מחיר נוכחי ($)</th>
+            <th>שווי ($)</th>
+            <th>רווח ($)</th>
             <th>שווי (₪)</th>
-            <th>רווח/הפסד (₪)</th>
+            <th>רווח (₪)</th>
           </tr>
         </thead>
 
-        <tbody id="ibkr-table-body">
-          <tr><td colspan="7">טוען נתונים…</td></tr>
-        </tbody>
+        <tbody id="ibkr-body"></tbody>
 
+        <tfoot>
+          <tr id="ibkr-summary">
+            <td colspan="9" style="text-align:center; padding:15px;">
+              טוען נתונים…
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
-
   </div>
 
   <script>
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+      "YOUR_APPSCRIPT_URL_HERE";
 
-    function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
-      });
-    }
-
-    async function loadIBKR() {
+    async function loadIbkr() {
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const summary = data.ibkr?.summary || {};
-      const positions = data.ibkr?.positions || [];
+      const usdRate = data.ibkr.summary.usdRate;
+      const rows = data.ibkr.positions;
 
-      document.getElementById("ibkr-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
+      const tbody = document.getElementById("ibkr-body");
+      const summary = document.getElementById("ibkr-summary");
 
-      const totalValue = Number(summary.totalValueIls || 0);
-      const totalProfit = Number(summary.totalProfitIls || 0);
-      const totalYield =
-        totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
-
-      document.getElementById("ibkr-total-value").innerText =
-        "₪" + format(totalValue);
-
-      document.getElementById("ibkr-total-pl").innerText =
-        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
-
-      document.getElementById("ibkr-total-yield").innerText =
-        totalYield.toFixed(2) + "%";
-
-      const tbody = document.getElementById("ibkr-table-body");
       tbody.innerHTML = "";
 
-      positions.forEach(p => {
+      let totalUsd = 0;
+      let totalIls = 0;
+      let totalPlUsd = 0;
+      let totalPlIls = 0;
+
+      rows.forEach(p => {
+        const plUsd = p.unrealizedPlUsd;
+        const plIls = p.unrealizedPlIls;
+
+        totalUsd += p.marketValueUsd;
+        totalIls += p.marketValueIls;
+        totalPlUsd += plUsd;
+        totalPlIls += plIls;
+
+        const plClassUsd = plUsd >= 0 ? "value-positive" : "value-negative";
+        const plClassIls = plIls >= 0 ? "value-positive" : "value-negative";
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${p.symbol}</td>
           <td>${p.description}</td>
-          <td>${format(p.quantity)}</td>
-          <td>${format(p.costUsd)}</td>
-          <td>${format(p.priceUsd)}</td>
-          <td>₪${format(p.valueIls)}</td>
-          <td class="${p.plIls >= 0 ? 'value-positive' : 'value-negative'}">
-            ${p.plIls >= 0 ? '+' : ''}₪${format(p.plIls)}
-          </td>
+          <td>${p.quantity}</td>
+          <td>${p.costBasis.toLocaleString()}</td>
+          <td>${p.marketPrice.toLocaleString()}</td>
+          <td>${p.marketValueUsd.toLocaleString()}</td>
+          <td class="${plClassUsd}">${plUsd.toLocaleString()}</td>
+          <td>${p.marketValueIls.toLocaleString()}</td>
+          <td class="${plClassIls}">${plIls.toLocaleString()}</td>
         `;
         tbody.appendChild(tr);
       });
+
+      summary.innerHTML = `
+        <td colspan="9" style="text-align:center; font-size:18px;">
+          סה״כ שווי ($): ${totalUsd.toLocaleString()} ·
+          סה״כ שווי (₪): ${totalIls.toLocaleString()} ·
+          סה״כ רווח ($): ${totalPlUsd.toLocaleString()} ·
+          סה״כ רווח (₪): ${totalPlIls.toLocaleString()}
+        </td>
+      `;
     }
 
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
-
-    loadIBKR();
+    loadIbkr();
   </script>
-
 </body>
 </html>
