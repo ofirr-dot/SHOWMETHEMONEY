@@ -11,28 +11,29 @@
     <h1>💰 רווח ממומש</h1>
     <p>כל המכירות שבוצעו + רווחים בדולר ובשקל</p>
 
-    <table id="realized-table">
-      <thead>
-        <tr>
-          <th>שנה</th>
-          <th>סימבול</th>
-          <th>תיאור</th>
-          <th>תאריך מכירה</th>
-          <th>עלות קנייה ($)</th>
-          <th>תמורה ($)</th>
-          <th>רווח ($)</th>
-          <th>שער</th>
-          <th>רווח (₪)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="realized-table-wrapper">
+      <table id="realized-table">
+        <thead>
+          <tr>
+            <th>שנה</th>
+            <th>סימבול</th>
+            <th>תיאור</th>
+            <th>תאריך מכירה</th>
+            <th>עלות קנייה ($)</th>
+            <th>תמורה ($)</th>
+            <th>רווח ($)</th>
+            <th>שער</th>
+            <th>רווח (₪)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
     async function loadData() {
       const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
-
       const data = await res.json();
 
       const rows = data.realized;
@@ -41,6 +42,8 @@
       rows.forEach(r => {
         const tr = document.createElement("tr");
 
+        const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
+
         tr.innerHTML = `
           <td>${r.year}</td>
           <td>${r.symbol}</td>
@@ -48,9 +51,9 @@
           <td>${r.saleDate}</td>
           <td>${r.costUsd.toLocaleString()}</td>
           <td>${r.proceedsUsd.toLocaleString()}</td>
-          <td>${r.profitUsd.toLocaleString()}</td>
+          <td class="${profitClass}">${r.profitUsd.toLocaleString()}</td>
           <td>${r.fxRate}</td>
-          <td>${r.profitIls.toLocaleString()}</td>
+          <td class="${profitClass}">${r.profitIls.toLocaleString()}</td>
         `;
 
         tbody.appendChild(tr);
