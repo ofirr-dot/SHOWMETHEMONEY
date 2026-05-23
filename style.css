@@ -283,7 +283,6 @@ canvas {
 #realized-table td {
   padding: 12px 10px;
   border-bottom: 1px solid #ffffff20;
-  white-space: nowrap;
 }
 
 #realized-table tbody tr:hover {
@@ -301,23 +300,12 @@ canvas {
 }
 
 /* עמודות מאוזנות */
-#realized-table th:nth-child(1),
-#realized-table td:nth-child(1) {
-  width: 60px;
+#realized-table th,
+#realized-table td {
+  width: 11%;
 }
 
 #realized-table th:nth-child(2),
 #realized-table td:nth-child(2) {
-  width: 80px;
+  width: 25%;
 }
-
-#realized-table th:nth-child(3),
-#realized-table td:nth-child(3) {
-  width: 220px;
-}
-
-#realized-table th:nth-child(4),
-#realized-table td:nth-child(4) {
-  width: 120px;
-}
-
