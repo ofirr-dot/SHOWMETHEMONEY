@@ -51,19 +51,19 @@
       const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
       const data = await res.json();
 
-      // מסנן שורת הוראות / שורות ריקות
-      rows = (data.realized || []).filter(r =>
-        r.symbol && !String(r.year || "").startsWith("💡")
-      ).map(r => ({
-        symbol: r.symbol,
-        description: r.description,
-        saleDate: r.saleDate,
-        costUsd: toNum(r.costUsd),
-        proceedsUsd: toNum(r.proceedsUsd),
-        profitUsd: toNum(r.profitUsd),
-        fxRate: toNum(r.fxRate),
-        profitIls: toNum(r.profitIls)
-      }));
+      // סינון שורות לא תקינות (כולל שורת ההוראות)
+      rows = (data.realized || [])
+        .filter(r => r.symbol && !String(r.year || "").startsWith("💡"))
+        .map(r => ({
+          symbol: r.symbol,
+          description: r.description,
+          saleDate: r.saleDate,
+          costUsd: toNum(r.costUsd),
+          proceedsUsd: toNum(r.proceedsUsd),
+          profitUsd: toNum(r.profitUsd),
+          fxRate: toNum(r.fxRate),
+          profitIls: toNum(r.profitIls)
+        }));
 
       const tbody = document.querySelector("#realized-table tbody");
       const summaryRow = document.getElementById("realized-summary-row");
@@ -108,10 +108,16 @@
         `;
       }
 
+      // מיון לפי רווח ($)
       document.getElementById("sort-profit").onclick = () => {
         rows.sort((a, b) =>
           sortAsc ? a.profitUsd - b.profitUsd : b.profitUsd - a.profitUsd
         );
+
+        // עדכון החץ
+        document.getElementById("sort-profit").innerHTML =
+          sortAsc ? "רווח ($) ⬆" : "רווח ($) ⬇";
+
         sortAsc = !sortAsc;
         renderTable();
       };
