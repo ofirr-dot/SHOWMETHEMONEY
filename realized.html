@@ -31,7 +31,8 @@
 
   <script>
     async function loadData() {
-      const res = await fetch("YOUR_APPSCRIPT_URL_HERE");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
+
       const data = await res.json();
 
       const rows = data.realized;
