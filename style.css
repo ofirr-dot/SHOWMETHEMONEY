@@ -309,3 +309,66 @@ canvas {
 #realized-table td:nth-child(2) {
   width: 25%;
 }
+
+/* ===== טבלת רווח ממומש ===== */
+
+.realized-table-wrapper {
+  margin-top: 25px;
+  overflow-x: auto;
+}
+
+#realized-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  background: #ffffff10;
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#realized-table thead {
+  background: #1e1e1e;
+  color: #fff;
+}
+
+#realized-table th,
+#realized-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #ffffff20;
+}
+
+#realized-table tbody tr:hover {
+  background: #ffffff15;
+}
+
+.value-positive {
+  color: #00c853;
+  font-weight: bold;
+}
+
+.value-negative {
+  color: #ff5252;
+  font-weight: bold;
+}
+
+/* עמודות מאוזנות */
+#realized-table th,
+#realized-table td {
+  width: 11%;
+}
+
+#realized-table th:nth-child(2),
+#realized-table td:nth-child(2) {
+  width: 25%;
+}
+
+/* ===== מס רווחי הון ===== */
+
+.tax-box {
+  background: #ffffff10;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  text-align: center;
+}
