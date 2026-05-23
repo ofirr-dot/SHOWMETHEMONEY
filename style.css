@@ -257,7 +257,7 @@ canvas {
     font-size: 14px;
   }
 
-   /* ===== טבלת רווח ממומש ===== */
+/* ===== טבלת רווח ממומש ===== */
 
 .realized-table-wrapper {
   margin-top: 25px;
@@ -321,7 +321,3 @@ canvas {
   width: 120px;
 }
 
-  .card-main {
-    font-size: 22px;
-  }
-}
