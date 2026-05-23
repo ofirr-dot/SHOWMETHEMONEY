@@ -20,7 +20,7 @@
             <th>תאריך מכירה</th>
             <th>עלות קנייה ($)</th>
             <th>תמורה ($)</th>
-            <th>רווח ($)</th>
+            <th id="sort-profit" style="cursor:pointer;">רווח ($) ⬍</th>
             <th>שער</th>
             <th>רווח (₪)</th>
           </tr>
@@ -40,45 +40,65 @@
   </div>
 
   <script>
+    let sortAsc = true;
+
     async function loadData() {
       const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
       const data = await res.json();
 
-      const rows = data.realized;
+      let rows = data.realized;
       const tbody = document.querySelector("#realized-table tbody");
       const summaryRow = document.getElementById("realized-summary-row");
 
-      let totalProfitUsd = 0;
-      let totalProfitIls = 0;
+      function renderTable() {
+        tbody.innerHTML = "";
 
-      rows.forEach(r => {
-        const tr = document.createElement("tr");
-        const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
+        let totalCost = 0;
+        let totalProceeds = 0;
+        let totalProfitUsd = 0;
+        let totalProfitIls = 0;
 
-        totalProfitUsd += r.profitUsd;
-        totalProfitIls += r.profitIls;
+        rows.forEach(r => {
+          const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
 
-        tr.innerHTML = `
-          <td>${r.symbol}</td>
-          <td>${r.description}</td>
-          <td>${r.saleDate}</td>
-          <td>${r.costUsd.toLocaleString()}</td>
-          <td>${r.proceedsUsd.toLocaleString()}</td>
-          <td class="${profitClass}">${r.profitUsd.toLocaleString()}</td>
-          <td>${r.fxRate}</td>
-          <td class="${profitClass}">${r.profitIls.toLocaleString()}</td>
+          totalCost += r.costUsd;
+          totalProceeds += r.proceedsUsd;
+          totalProfitUsd += r.profitUsd;
+          totalProfitIls += r.profitIls;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${r.symbol}</td>
+            <td>${r.description}</td>
+            <td>${r.saleDate}</td>
+            <td>${r.costUsd.toLocaleString()}</td>
+            <td>${r.proceedsUsd.toLocaleString()}</td>
+            <td class="${profitClass}">${r.profitUsd.toLocaleString()}</td>
+            <td>${r.fxRate}</td>
+            <td class="${profitClass}">${r.profitIls.toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        summaryRow.innerHTML = `
+          <td colspan="8" style="text-align:center; font-size:18px; padding:15px;">
+            סה״כ עלות: $${totalCost.toLocaleString()} ·
+            סה״כ תמורה: $${totalProceeds.toLocaleString()} ·
+            סה״כ רווח: $${totalProfitUsd.toLocaleString()} ·
+            סה״כ רווח (₪): ₪${totalProfitIls.toLocaleString()}
+          </td>
         `;
+      }
 
-        tbody.appendChild(tr);
-      });
+      document.getElementById("sort-profit").onclick = () => {
+        rows.sort((a, b) =>
+          sortAsc ? a.profitUsd - b.profitUsd : b.profitUsd - a.profitUsd
+        );
+        sortAsc = !sortAsc;
+        renderTable();
+      };
 
-      summaryRow.innerHTML = `
-        <td colspan="8" style="text-align:center; font-size:18px; padding:15px;">
-          <span style="color:#00c853; font-weight:bold;">
-            סה״כ רווח ממומש: $${totalProfitUsd.toLocaleString()} · ₪${totalProfitIls.toLocaleString()}
-          </span>
-        </td>
-      `;
+      renderTable();
     }
 
     loadData();
