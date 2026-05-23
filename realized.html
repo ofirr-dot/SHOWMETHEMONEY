@@ -15,14 +15,14 @@
       <table id="realized-table">
         <thead>
           <tr>
-            <th>סימבול</th>
-            <th>תיאור</th>
-            <th>תאריך מכירה</th>
-            <th>עלות קנייה ($)</th>
-            <th>תמורה ($)</th>
-            <th id="sort-profit" style="cursor:pointer;">רווח ($) ⬍</th>
-            <th>שער</th>
-            <th>רווח (₪)</th>
+            <th data-col="symbol" class="sortable">סימבול ⬍</th>
+            <th data-col="description" class="sortable">תיאור ⬍</th>
+            <th data-col="saleDate" class="sortable">תאריך מכירה ⬍</th>
+            <th data-col="costUsd" class="sortable">עלות קנייה ($) ⬍</th>
+            <th data-col="proceedsUsd" class="sortable">תמורה ($) ⬍</th>
+            <th data-col="profitUsd" class="sortable">רווח ($) ⬍</th>
+            <th data-col="fxRate" class="sortable">שער ⬍</th>
+            <th data-col="profitIls" class="sortable">רווח (₪) ⬍</th>
           </tr>
         </thead>
 
@@ -40,18 +40,22 @@
   </div>
 
   <script>
-    let sortAsc = true;
     let rows = [];
+    let sortState = {}; // שומר מצב מיון לכל עמודה
 
     function toNum(v) {
       return Number(v || 0);
+    }
+
+    function parseDate(d) {
+      const parts = d.split("/");
+      return new Date(parts[2], parts[1] - 1, parts[0]);
     }
 
     async function loadData() {
       const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
       const data = await res.json();
 
-      // סינון שורות לא תקינות (כולל שורת ההוראות)
       rows = (data.realized || [])
         .filter(r => r.symbol && !String(r.year || "").startsWith("💡"))
         .map(r => ({
@@ -65,64 +69,86 @@
           profitIls: toNum(r.profitIls)
         }));
 
+      renderTable();
+      enableSorting();
+    }
+
+    function renderTable() {
       const tbody = document.querySelector("#realized-table tbody");
       const summaryRow = document.getElementById("realized-summary-row");
 
-      function renderTable() {
-        tbody.innerHTML = "";
+      tbody.innerHTML = "";
 
-        let totalCost = 0;
-        let totalProceeds = 0;
-        let totalProfitUsd = 0;
-        let totalProfitIls = 0;
+      let totalCost = 0;
+      let totalProceeds = 0;
+      let totalProfitUsd = 0;
+      let totalProfitIls = 0;
 
-        rows.forEach(r => {
-          const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
+      rows.forEach(r => {
+        const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
 
-          totalCost += r.costUsd;
-          totalProceeds += r.proceedsUsd;
-          totalProfitUsd += r.profitUsd;
-          totalProfitIls += r.profitIls;
+        totalCost += r.costUsd;
+        totalProceeds += r.proceedsUsd;
+        totalProfitUsd += r.profitUsd;
+        totalProfitIls += r.profitIls;
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${r.symbol}</td>
-            <td>${r.description}</td>
-            <td>${r.saleDate}</td>
-            <td>${r.costUsd.toLocaleString()}</td>
-            <td>${r.proceedsUsd.toLocaleString()}</td>
-            <td class="${profitClass}">${r.profitUsd.toLocaleString()}</td>
-            <td>${r.fxRate}</td>
-            <td class="${profitClass}">${r.profitIls.toLocaleString()}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        summaryRow.innerHTML = `
-          <td colspan="8" style="text-align:center; font-size:18px; padding:15px;">
-            סה״כ עלות: $${totalCost.toLocaleString()} ·
-            סה״כ תמורה: $${totalProceeds.toLocaleString()} ·
-            סה״כ רווח: $${totalProfitUsd.toLocaleString()} ·
-            סה״כ רווח (₪): ₪${totalProfitIls.toLocaleString()}
-          </td>
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.symbol}</td>
+          <td>${r.description}</td>
+          <td>${r.saleDate}</td>
+          <td>${r.costUsd.toLocaleString()}</td>
+          <td>${r.proceedsUsd.toLocaleString()}</td>
+          <td class="${profitClass}">${r.profitUsd.toLocaleString()}</td>
+          <td>${r.fxRate}</td>
+          <td class="${profitClass}">${r.profitIls.toLocaleString()}</td>
         `;
-      }
+        tbody.appendChild(tr);
+      });
 
-      // מיון לפי רווח ($)
-      document.getElementById("sort-profit").onclick = () => {
-        rows.sort((a, b) =>
-          sortAsc ? a.profitUsd - b.profitUsd : b.profitUsd - a.profitUsd
-        );
+      summaryRow.innerHTML = `
+        <td colspan="8" style="text-align:center; font-size:18px; padding:15px;">
+          סה״כ עלות: $${totalCost.toLocaleString()} ·
+          סה״כ תמורה: $${totalProceeds.toLocaleString()} ·
+          סה״כ רווח: $${totalProfitUsd.toLocaleString()} ·
+          סה״כ רווח (₪): ₪${totalProfitIls.toLocaleString()}
+        </td>
+      `;
+    }
 
-        // עדכון החץ
-        document.getElementById("sort-profit").innerHTML =
-          sortAsc ? "רווח ($) ⬆" : "רווח ($) ⬇";
+    function enableSorting() {
+      document.querySelectorAll(".sortable").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.col;
 
-        sortAsc = !sortAsc;
-        renderTable();
-      };
+          sortState[col] = !sortState[col]; // הפוך כיוון מיון
 
-      renderTable();
+          rows.sort((a, b) => {
+            let A = a[col];
+            let B = b[col];
+
+            if (col === "saleDate") {
+              A = parseDate(A);
+              B = parseDate(B);
+            }
+
+            if (typeof A === "string") {
+              return sortState[col] ? A.localeCompare(B) : B.localeCompare(A);
+            }
+
+            return sortState[col] ? A - B : B - A;
+          });
+
+          // עדכון החץ
+          document.querySelectorAll(".sortable").forEach(x => {
+            x.innerHTML = x.innerHTML.replace("⬆", "⬍").replace("⬇", "⬍");
+          });
+
+          th.innerHTML = th.innerHTML.replace("⬍", sortState[col] ? "⬆" : "⬇");
+
+          renderTable();
+        });
+      });
     }
 
     loadData();
