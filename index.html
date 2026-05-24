@@ -124,4 +124,128 @@
       const banksTotal      = banks.reduce((s, r) => s + Number(r.valueIls || 0), 0);
 
       const kidsTotal       = kids.reduce((s, r) => s + Number(r.value || 0), 0);
-      const kidsProfit      = kids.reduce((s, r) => s + (Number(r.value || 0) - Number(r.deposits || 0)),
+      const kidsProfit      = kids.reduce((s, r) => s + (Number(r.value || 0) - Number(r.deposits || 0)), 0);
+
+      const hishtalmutTotal = Number(hishtalmut.value || 0);
+      const hishtalmutProfit = Number(hishtalmut.profit || 0);
+
+      const ibkrTotal       = ibkr.totalValueIls || 0;
+      const ibkrProfit      = ibkr.totalProfitIls || 0;
+
+      const totalValue =
+        fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
+
+      document.getElementById("overview-total-value").innerText =
+        "₪" + format(totalValue);
+
+      const totalProfit =
+        fairProfit + kidsProfit + hishtalmutProfit + ibkrProfit;
+
+      document.getElementById("overview-total-pl").innerText =
+        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+
+      document.getElementById("overview-total-yield").innerText =
+        totalValue > 0 ? ((totalProfit / (totalValue - totalProfit)) * 100).toFixed(2) + "%" : "0%";
+
+      document.getElementById("overview-total-accounts").innerText = 5;
+
+      accounts = [
+        { name: "IBKR", value: ibkrTotal, profit: ibkrProfit, type: "השקעות" },
+        { name: "FAIR", value: fairTotal, profit: fairProfit, type: "קרנות" },
+        { name: "בנקים", value: banksTotal, profit: 0, type: "בנק" },
+        { name: "קרן השתלמות", value: hishtalmutTotal, profit: hishtalmutProfit, type: "פנסיה" },
+        { name: "חיסכון לכל ילד", value: kidsTotal, profit: kidsProfit, type: "ילדים" }
+      ];
+
+      accounts = accounts.map(a => ({
+        ...a,
+        percent: totalValue > 0 ? (a.value / totalValue) * 100 : 0
+      }));
+
+      renderTable();
+      renderPieChart();
+      renderBarChart();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("overview-table-body");
+      tbody.innerHTML = "";
+
+      accounts.forEach(a => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${a.name}</td>
+          <td>₪${format(a.value)}</td>
+          <td class="${a.profit >= 0 ? 'value-positive' : 'value-negative'}">
+            ${a.profit >= 0 ? '+' : ''}₪${format(a.profit)}
+          </td>
+          <td>${a.percent.toFixed(2)}%</td>
+          <td>${a.type}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderPieChart() {
+      new Chart(document.getElementById("overview-chart"), {
+        type: "pie",
+        data: {
+          labels: accounts.map(a => a.name),
+          datasets: [{
+            data: accounts.map(a => a.value),
+            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
+          }]
+        }
+      });
+    }
+
+    function renderBarChart() {
+      new Chart(document.getElementById("overview-bar"), {
+        type: "bar",
+        data: {
+          labels: accounts.map(a => a.name),
+          datasets: [
+            {
+              label: "שווי נוכחי (₪)",
+              data: accounts.map(a => a.value),
+              backgroundColor: "rgba(54, 162, 235, 0.7)"
+            },
+            {
+              label: "רווח (₪)",
+              data: accounts.map(a => a.profit),
+              backgroundColor: "rgba(255, 99, 132, 0.7)"
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    document.addEventListener("click", e => {
+      if (!e.target.classList.contains("sort")) return;
+
+      const field = e.target.dataset.sort;
+      sortDirection *= -1;
+
+      accounts.sort((a, b) => (a[field] - b[field]) * sortDirection);
+
+      renderTable();
+    });
+
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+
+    loadOverview();
+  </script>
+
+</body>
+</html>
