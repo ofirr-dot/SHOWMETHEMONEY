@@ -21,6 +21,7 @@
     <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
   </nav>
 
   <div class="page">
@@ -70,7 +71,7 @@
             <th>שווי (₪) <span class="sort" data-sort="value">⇅</span></th>
             <th>רווח (₪) <span class="sort" data-sort="profit">⇅</span></th>
             <th>אחוז מהתיק <span class="sort" data-sort="percent">⇅</span></th>
-            <th>קטגוריה <span class="sort" data-sort="type">⇅</span></th>
+            <th>קטגוריה</th>
           </tr>
         </thead>
         <tbody id="overview-table-body">
@@ -87,7 +88,7 @@
       </div>
     </div>
 
-    <!-- גרף עוגה – הכי למטה -->
+    <!-- גרף עוגה קטן בתחתית -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
         <h3 style="margin-bottom:10px; font-size:15px;">התפלגות תיק</h3>
@@ -99,12 +100,10 @@
 
   <script>
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec?mode=api";
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
     function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
-      });
+      return Number(n || 0).toLocaleString("he-IL");
     }
 
     let accounts = [];
@@ -114,40 +113,34 @@
       const res = await fetch(API_URL);
       const data = await res.json();
 
+      const ibkr       = data.ibkr?.summary || {};
+      const fair       = data.fair || [];
+      const banks      = data.banks || [];
+      const kids       = data.kids || [];
+      const hishtalmut = data.hishtalmut || {};
+
       document.getElementById("overview-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const ibkrSummary  = data.ibkr?.summary || {};
-      const fair         = data.fair || [];
-      const banks        = data.banks || [];
-      const kids         = data.kids || [];
-      const hishtalmut   = data.hishtalmut || {};
+      const fairTotal       = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0);
+      const fairProfit      = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || 0), 0);
 
-      const fairTotal  = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0);
-      const fairProfit = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || 0), 0);
+      const banksTotal      = banks.reduce((s, r) => s + Number(r.valueIls || 0), 0);
 
-      const banksFiltered = banks.filter(b => Number(b.valueIls || 0) > 0);
-      const banksTotal    = banksFiltered.reduce((s, r) => s + Number(r.valueIls || 0), 0);
-
-      const kidsTotal  = kids.reduce((s, r) => s + Number(r.valueIls || r.value || 0), 0);
-      const kidsProfit = kids.reduce((s, r) => s + Number(r.profitIls || r.profit || 0), 0);
+      const kidsTotal       = kids.reduce((s, r) => s + Number(r.value || 0), 0);
+      const kidsProfit      = kids.reduce((s, r) => s + (Number(r.value || 0) - Number(r.deposits || 0)), 0);
 
       const hishtalmutTotal  = Number(hishtalmut.value || 0);
       const hishtalmutProfit = Number(hishtalmut.profit || 0);
 
-      const ibkrTotal  = Number(ibkrSummary.totalValueIls || 0);
-      const ibkrProfit = Number(ibkrSummary.totalProfitIls || 0);
+      const ibkrTotal       = ibkr.totalValueIls || 0;
+      const ibkrProfit      = ibkr.totalProfitIls || 0;
 
       const totalValue =
         fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
 
       const totalProfit =
         fairProfit + kidsProfit + hishtalmutProfit + ibkrProfit;
-
-      const totalYield =
-        totalValue > 0
-          ? (totalProfit / (totalValue - totalProfit)) * 100
-          : 0;
 
       document.getElementById("overview-total-value").innerText =
         "₪" + format(totalValue);
@@ -156,16 +149,16 @@
         (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
 
       document.getElementById("overview-total-yield").innerText =
-        totalYield.toFixed(2) + "%";
+        totalValue > 0 ? ((totalProfit / (totalValue - totalProfit)) * 100).toFixed(2) + "%" : "0%";
 
       document.getElementById("overview-total-accounts").innerText = 5;
 
       accounts = [
-        { name: "IBKR",             value: ibkrTotal,       profit: ibkrProfit,       type: "השקעות" },
-        { name: "FAIR",             value: fairTotal,       profit: fairProfit,       type: "קרנות" },
-        { name: "בנקים",           value: banksTotal,      profit: 0,                type: "בנק" },
-        { name: "קרן השתלמות",     value: hishtalmutTotal, profit: hishtalmutProfit, type: "פנסיה" },
-        { name: "חיסכון לכל ילד",  value: kidsTotal,       profit: kidsProfit,       type: "ילדים" }
+        { name: "IBKR", value: ibkrTotal,       profit: ibkrProfit,       type: "השקעות" },
+        { name: "FAIR", value: fairTotal,       profit: fairProfit,       type: "קרנות" },
+        { name: "בנקים", value: banksTotal,     profit: 0,                type: "בנק" },
+        { name: "קרן השתלמות", value: hishtalmutTotal, profit: hishtalmutProfit, type: "פנסיה" },
+        { name: "חיסכון לכל ילד", value: kidsTotal, profit: kidsProfit,   type: "ילדים" }
       ];
 
       accounts = accounts.map(a => ({
@@ -197,6 +190,19 @@
       });
     }
 
+    function renderPieChart() {
+      new Chart(document.getElementById("overview-chart"), {
+        type: "pie",
+        data: {
+          labels: accounts.map(a => a.name),
+          datasets: [{
+            data: accounts.map(a => a.value),
+            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
+          }]
+        }
+      });
+    }
+
     function renderBarChart() {
       new Chart(document.getElementById("overview-bar"), {
         type: "bar",
@@ -216,46 +222,26 @@
           ]
         },
         options: {
+          responsive: true,
           plugins: { legend: { position: "bottom" } },
-          scales: { y: { beginAtZero: true } }
+          scales: {
+            y: { beginAtZero: true }
+          }
         }
       });
     }
 
-    function renderPieChart() {
-      new Chart(document.getElementById("overview-chart"), {
-        type: "pie",
-        data: {
-          labels: accounts.map(a => a.name),
-          datasets: [{
-            data: accounts.map(a => a.value),
-            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
-          }]
-        },
-        options: {
-          plugins: { legend: { position: "bottom" } }
-        }
-      });
-    }
-
-    // מיון
     document.addEventListener("click", e => {
       if (!e.target.classList.contains("sort")) return;
 
       const field = e.target.dataset.sort;
       sortDirection *= -1;
 
-      accounts.sort((a, b) => {
-        if (field === "name" || field === "type") {
-          return a[field].localeCompare(b[field], "he") * sortDirection;
-        }
-        return (a[field] - b[field]) * sortDirection;
-      });
+      accounts.sort((a, b) => (a[field] - b[field]) * sortDirection);
 
       renderTable();
     });
 
-    // מצב כהה
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
       themeToggle.textContent =
