@@ -6,7 +6,6 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    /* כרטיסים */
     .card-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -22,7 +21,6 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      position: relative;
     }
 
     .admin-card-title {
@@ -46,16 +44,10 @@
       font-size: 15px;
     }
 
-    .edit-btn:hover {
-      background: #0063d6;
-    }
-
-    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.45);
-      backdrop-filter: blur(4px);
       display: none;
       justify-content: center;
       align-items: center;
@@ -68,21 +60,6 @@
       padding: 25px;
       border-radius: 14px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-      animation: fadeIn 0.25s ease;
-      position: relative;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .modal h2 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      font-size: 20px;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 8px;
     }
 
     .modal input {
@@ -91,7 +68,6 @@
       margin-bottom: 12px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      font-size: 15px;
     }
 
     .modal-save {
@@ -105,38 +81,21 @@
       font-size: 16px;
     }
 
-    .modal-save:hover {
-      background: #0063d6;
-    }
-
     .modal-close {
       position: absolute;
       top: 12px;
       right: 12px;
       font-size: 20px;
       cursor: pointer;
-      color: #666;
-    }
-
-    .modal-close:hover {
-      color: black;
     }
   </style>
 </head>
 
 <body class="theme-overview">
 
-  <button id="themeToggle" class="theme-btn">🌙</button>
-
   <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
-    <a href="admin.html" class="nav-item active"><span class="icon">⚙️</span> ניהול נתונים</a>
+    <a href="index.html" class="nav-item">סקירה כללית</a>
+    <a href="admin.html" class="nav-item active">ניהול נתונים</a>
   </nav>
 
   <div class="page">
@@ -146,15 +105,12 @@
       <div class="page-subtitle">עריכת נתונים ישירות באתר</div>
     </div>
 
-    <!-- כרטיסים של קרן השתלמות -->
     <h2>קרן השתלמות</h2>
     <div id="hishtalmut-cards" class="card-list"></div>
 
-    <!-- כרטיסים של בנקים -->
     <h2>בנקים</h2>
     <div id="banks-cards" class="card-list"></div>
 
-    <!-- כרטיסים של חיסכון לכל ילד -->
     <h2>חיסכון לכל ילד</h2>
     <div id="kids-cards" class="card-list"></div>
 
@@ -165,9 +121,7 @@
     <div class="modal">
       <div class="modal-close" onclick="closeModal()">✕</div>
       <h2 id="modal-title"></h2>
-
       <div id="modal-fields"></div>
-
       <button class="modal-save" onclick="saveModal()">שמור</button>
     </div>
   </div>
@@ -179,26 +133,32 @@
     let currentEdit = null;
 
     async function loadData() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
 
-      // קרן השתלמות – נשלפת מתוך הבנקים (שורה "קרן השתלמות")
-      const hishtalmutFromBanks = (data.banks || []).find(
-        b => b.bank === "קרן השתלמות"
-      ) || { valueIls: 0, profit: 0 };
+        // קרן השתלמות מתוך הבנקים
+        const hisht = (data.banks || []).find(b => b.bank === "קרן השתלמות") || {
+          valueIls: 0,
+          profit: 0
+        };
 
-      renderHishtalmut({
-        value: hishtalmutFromBanks.valueIls || 0,
-        profit: hishtalmutFromBanks.profit || 0
-      });
+        renderHishtalmut({
+          value: hisht.valueIls,
+          profit: hisht.profit || 0
+        });
 
-      renderBanks(data.banks || []);
-      renderKids(data.kids || []);
+        renderBanks(data.banks || []);
+        renderKids(data.kids || []);
+
+      } catch (e) {
+        console.error("Load error:", e);
+        alert("שגיאה בטעינת הנתונים");
+      }
     }
 
     function renderHishtalmut(h) {
-      const container = document.getElementById("hishtalmut-cards");
-      container.innerHTML = `
+      document.getElementById("hishtalmut-cards").innerHTML = `
         <div class="admin-card">
           <div class="admin-card-title">קרן השתלמות</div>
           <div class="admin-card-field">שווי: ₪${h.value}</div>
@@ -209,14 +169,12 @@
     }
 
     function renderBanks(banks) {
-      const container = document.getElementById("banks-cards");
-
-      // סינון כרטיסיות לא רלוונטיות: הוראות + קרן השתלמות (שכבר מוצגת למעלה)
       const filtered = banks.filter(
         b => b.type !== "הוראה" && b.bank !== "קרן השתלמות"
       );
 
-      container.innerHTML = filtered.map(b => `
+      document.getElementById("banks-cards").innerHTML =
+        filtered.map(b => `
         <div class="admin-card">
           <div class="admin-card-title">${b.bank}</div>
           <div class="admin-card-field">סוג: ${b.type}</div>
@@ -227,8 +185,8 @@
     }
 
     function renderKids(kids) {
-      const container = document.getElementById("kids-cards");
-      container.innerHTML = kids.map(k => `
+      document.getElementById("kids-cards").innerHTML =
+        kids.map(k => `
         <div class="admin-card">
           <div class="admin-card-title">${k.childName}</div>
           <div class="admin-card-field">שווי: ₪${k.value}</div>
@@ -273,60 +231,18 @@
       document.getElementById("modal-overlay").style.display = "none";
     }
 
-async function saveModal() {
-  const { type } = currentEdit;
+    async function saveModal() {
+      const { type } = currentEdit;
 
-  let payload = { action: "" };
+      let payload = { action: "" };
 
-  if (type === "hishtalmut") {
-    payload = {
-      action: "update_hishtalmut",
-      value: document.getElementById("f-value").value,
-      profit: document.getElementById("f-profit").value
-    };
-  }
-
-  if (type === "bank") {
-    payload = {
-      action: "update_bank",
-      bank: document.getElementById("f-bank").value,
-      type: document.getElementById("f-type").value,
-      value: document.getElementById("f-value").value
-    };
-  }
-
-  if (type === "kid") {
-    payload = {
-      action: "update_kid",
-      name: document.getElementById("f-name").value,
-      value: document.getElementById("f-value").value,
-      deposits: document.getElementById("f-deposits").value
-    };
-  }
-
-  const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-
-  let json;
-  try {
-    json = await res.json();
-  } catch (e) {
-    alert("שגיאה בתקשורת עם השרת");
-    return;
-  }
-
-  if (!json.ok) {
-    alert("שגיאה בשמירה: " + (json.error || "לא ידוע"));
-    return;
-  }
-
-  closeModal();
-  await loadData();
-  alert("עודכן בהצלחה");
-}
-
+      if (type === "hishtalmut") {
+        payload = {
+          action: "update_hishtalmut",
+          value: document.getElementById("f-value").value,
+          profit: document.getElementById("f-profit").value
+        };
+      }
 
       if (type === "bank") {
         payload = {
