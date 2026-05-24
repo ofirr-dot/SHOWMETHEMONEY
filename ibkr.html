@@ -4,6 +4,34 @@
   <meta charset="UTF-8">
   <title>IBKR – פוזיציות פתוחות</title>
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    table th, table td {
+      text-align: center;
+    }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90px;
+    }
+  </style>
 </head>
 
 <body class="theme-overview">
@@ -31,6 +59,14 @@
         <div class="page-subtitle">נתונים חיים מה‑IBKR FLEX API</div>
       </div>
       <div class="page-subtitle">Ofir</div>
+    </div>
+
+    <!-- בועות ממורכזות -->
+    <div class="bubble-row">
+      <div class="bubble" id="bubble-total-usd">סה״כ שווי ($): 0</div>
+      <div class="bubble" id="bubble-total-ils">סה״כ שווי (₪): 0</div>
+      <div class="bubble" id="bubble-total-pl-usd">סה״כ רווח ($): 0</div>
+      <div class="bubble" id="bubble-total-pl-ils">סה״כ רווח (₪): 0</div>
     </div>
 
     <div class="realized-table-wrapper">
@@ -118,6 +154,19 @@
           סה״כ רווח (₪): ${totalPlIls.toLocaleString()}
         </td>
       `;
+
+      // עדכון הבועות
+      document.getElementById("bubble-total-usd").innerText =
+        "סה״כ שווי ($): " + totalUsd.toLocaleString();
+
+      document.getElementById("bubble-total-ils").innerText =
+        "סה״כ שווי (₪): " + totalIls.toLocaleString();
+
+      document.getElementById("bubble-total-pl-usd").innerText =
+        "סה״כ רווח ($): " + totalPlUsd.toLocaleString();
+
+      document.getElementById("bubble-total-pl-ils").innerText =
+        "סה״כ רווח (₪): " + totalPlIls.toLocaleString();
     }
 
     // מצב כהה/בהיר
