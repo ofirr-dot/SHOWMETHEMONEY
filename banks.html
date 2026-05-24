@@ -5,6 +5,10 @@
   <title>בנקים – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    th.sortable { cursor: pointer; }
+    th.sortable:hover { opacity: 0.7; }
+  </style>
 </head>
 
 <body class="theme-banks">
@@ -52,10 +56,10 @@
       <table>
         <thead>
           <tr>
-            <th>בנק</th>
-            <th>סוג חשבון</th>
-            <th>שווי נוכחי (₪)</th>
-            <th>שווי ($)</th>
+            <th class="sortable" data-col="bank">בנק ⬍</th>
+            <th class="sortable" data-col="type">סוג חשבון ⬍</th>
+            <th class="sortable" data-col="ils">שווי נוכחי (₪) ⬍</th>
+            <th class="sortable" data-col="usd">שווי ($) ⬍</th>
           </tr>
         </thead>
 
@@ -66,18 +70,7 @@
       </table>
     </div>
 
-    <!-- הוראות -->
-    <div class="card" style="margin-top:20px; padding:20px;">
-      <h3 style="margin-bottom:10px;">הוראות</h3>
-      <ul style="line-height:1.8;">
-        <li>עדכן יתרה לאחר כניסה לאפליקציית הבנק.</li>
-        <li>שווי שקלי מחושב אוטומטית לפי שער הדולר בגיליון הגדרות.</li>
-        <li>חשבונות ILS אינם דורשים המרה (שער = 1).</li>
-        <li>לאחר עדכון — שלח למזמין לסיכום.</li>
-      </ul>
-    </div>
-
-    <!-- גרף עוגה — עכשיו למטה -->
+    <!-- גרף עוגה -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
         <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
@@ -91,6 +84,9 @@
     const API_URL =
       "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
+    let rows = [];
+    let sortState = {};
+
     function format(n) {
       return Number(n || 0).toLocaleString("he-IL", {
         maximumFractionDigits: 2
@@ -101,67 +97,105 @@
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const usdRate = data.ibkr?.summary?.usdRate || 3.6; // שער דולר עדכני
+      const usdRate = data.ibkr?.summary?.usdRate || 3.6;
 
-      const banks = (data.banks || [])
-        .filter(b => Number(b.valueIls || b["ערך בש״ח"] || 0) > 0);
+      rows = (data.banks || [])
+        .map(b => {
+          const ils = Number(b.valueIls || b["ערך בש״ח"] || 0);
+
+          const isUsd =
+            (b.currency || "").toUpperCase() === "USD" ||
+            (b.type || "").toLowerCase().includes("checking") ||
+            (b.type || "").toLowerCase().includes("savings");
+
+          const usd = isUsd ? ils / usdRate : null;
+
+          return {
+            bank: b.bank || b["בנק"],
+            type: b.type || b["סוג חשבון"],
+            ils,
+            usd
+          };
+        })
+        .filter(r => r.ils > 0);
 
       document.getElementById("banks-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const totalValue = banks.reduce(
-        (s, r) => s + Number(r.valueIls || r["ערך בש״ח"] || 0),
-        0
-      );
-
       document.getElementById("banks-total-value").innerText =
-        "₪" + format(totalValue);
+        "₪" + format(rows.reduce((s, r) => s + r.ils, 0));
 
       document.getElementById("banks-total-accounts").innerText =
-        banks.length;
+        rows.length;
 
+      renderTable();
+      enableSorting();
+      renderChart();
+    }
+
+    function renderTable() {
       const tbody = document.getElementById("banks-table-body");
       tbody.innerHTML = "";
 
-      banks.forEach(b => {
-        const valueIls = Number(b.valueIls || b["ערך בש״ח"] || 0);
-
-        // אם זה חשבון דולר — מחשבים USD
-        const isUsd = (b.currency || "").toUpperCase() === "USD" ||
-                      (b.type || "").toLowerCase().includes("checking") ||
-                      (b.type || "").toLowerCase().includes("savings");
-
-        const valueUsd = isUsd ? valueIls / usdRate : null;
-
+      rows.forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${b.bank || b["בנק"]}</td>
-          <td>${b.type || b["סוג חשבון"]}</td>
-          <td>₪${format(valueIls)}</td>
-          <td>${valueUsd ? "$" + format(valueUsd) : "—"}</td>
+          <td>${r.bank}</td>
+          <td>${r.type}</td>
+          <td>₪${format(r.ils)}</td>
+          <td>${r.usd ? "$" + format(r.usd) : "—"}</td>
         `;
         tbody.appendChild(tr);
       });
+    }
 
-      const ctx = document.getElementById("banks-chart");
-      if (ctx) {
-        new Chart(ctx, {
-          type: "pie",
-          data: {
-            labels: banks.map(b => b.bank || b["בנק"]),
-            datasets: [{
-              data: banks.map(b => Number(b.valueIls || b["ערך בש״ח"])),
-              backgroundColor: [
-                "#6A4FF7", "#0A8A2A", "#00A8A8",
-                "#FF8A3D", "#E84E89", "#4A90E2"
-              ]
-            }]
-          },
-          options: {
-            plugins: { legend: { position: "bottom" } }
-          }
+    function enableSorting() {
+      document.querySelectorAll("th.sortable").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.col;
+
+          sortState[col] = !sortState[col];
+
+          rows.sort((a, b) => {
+            const A = a[col] ?? 0;
+            const B = b[col] ?? 0;
+
+            if (typeof A === "string") {
+              return sortState[col] ? A.localeCompare(B) : B.localeCompare(A);
+            }
+
+            return sortState[col] ? A - B : B - A;
+          });
+
+          document.querySelectorAll("th.sortable").forEach(x => {
+            x.innerHTML = x.innerHTML.replace("⬆", "⬍").replace("⬇", "⬍");
+          });
+
+          th.innerHTML = th.innerHTML.replace("⬍", sortState[col] ? "⬆" : "⬇");
+
+          renderTable();
         });
-      }
+      });
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById("banks-chart");
+      new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: rows.map(r => r.bank),
+          datasets: [{
+            data: rows.map(r => r.ils),
+            backgroundColor: [
+              "#6A4FF7", "#0A8A2A", "#00A8A8",
+              "#FF8A3D", "#E84E89", "#4A90E2"
+            ]
+          }]
+        },
+        options: {
+          plugins: { legend: { position: "bottom" } }
+        }
+      });
     }
 
     document.getElementById("themeToggle").onclick = () => {
