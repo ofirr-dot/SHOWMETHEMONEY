@@ -45,14 +45,6 @@
 
     </div>
 
-    <!-- גרף עוגה -->
-    <div class="cards-row">
-      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
-        <canvas id="banks-chart" height="80"></canvas>
-      </div>
-    </div>
-
     <!-- טבלה -->
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px;">רשימת חשבונות בנק</h2>
@@ -63,17 +55,18 @@
             <th>בנק</th>
             <th>סוג חשבון</th>
             <th>שווי נוכחי (₪)</th>
+            <th>שווי ($)</th>
           </tr>
         </thead>
 
         <tbody id="banks-table-body">
-          <tr><td colspan="3">טוען נתונים…</td></tr>
+          <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
     </div>
 
-    <!-- הוראות מסודרות -->
+    <!-- הוראות -->
     <div class="card" style="margin-top:20px; padding:20px;">
       <h3 style="margin-bottom:10px;">הוראות</h3>
       <ul style="line-height:1.8;">
@@ -82,6 +75,14 @@
         <li>חשבונות ILS אינם דורשים המרה (שער = 1).</li>
         <li>לאחר עדכון — שלח למזמין לסיכום.</li>
       </ul>
+    </div>
+
+    <!-- גרף עוגה — עכשיו למטה -->
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
+        <canvas id="banks-chart" height="80"></canvas>
+      </div>
     </div>
 
   </div>
@@ -100,8 +101,10 @@
       const res = await fetch(API_URL);
       const data = await res.json();
 
+      const usdRate = data.ibkr?.summary?.usdRate || 3.6; // שער דולר עדכני
+
       const banks = (data.banks || [])
-        .filter(b => Number(b.valueIls || b["ערך בש״ח"] || 0) > 0); // ❗ מסיר שורות ריקות
+        .filter(b => Number(b.valueIls || b["ערך בש״ח"] || 0) > 0);
 
       document.getElementById("banks-timestamp").innerText =
         new Date().toLocaleString("he-IL");
@@ -121,13 +124,21 @@
       tbody.innerHTML = "";
 
       banks.forEach(b => {
-        const value = Number(b.valueIls || b["ערך בש״ח"] || 0);
+        const valueIls = Number(b.valueIls || b["ערך בש״ח"] || 0);
+
+        // אם זה חשבון דולר — מחשבים USD
+        const isUsd = (b.currency || "").toUpperCase() === "USD" ||
+                      (b.type || "").toLowerCase().includes("checking") ||
+                      (b.type || "").toLowerCase().includes("savings");
+
+        const valueUsd = isUsd ? valueIls / usdRate : null;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${b.bank || b["בנק"]}</td>
           <td>${b.type || b["סוג חשבון"]}</td>
-          <td>₪${format(value)}</td>
+          <td>₪${format(valueIls)}</td>
+          <td>${valueUsd ? "$" + format(valueUsd) : "—"}</td>
         `;
         tbody.appendChild(tr);
       });
