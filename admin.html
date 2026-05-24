@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>ניהול נתונים – Show Me The Money</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .admin-section {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .admin-section h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .admin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 350px;
+      margin: auto;
+    }
+
+    .admin-form input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .admin-btn {
+      padding: 12px;
+      background: #4A90E2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    .admin-btn:hover {
+      background: #357ABD;
+    }
+  </style>
+</head>
+
+<body class="theme-overview">
+
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+    <a href="admin.html" class="nav-item active"><span class="icon">⚙️</span> ניהול נתונים</a>
+  </nav>
+
+  <div class="page">
+
+    <div class="page-header">
+      <h1>⚙️ דף ניהול נתונים</h1>
+      <div class="page-subtitle">עריכת נתונים ישירות באתר</div>
+    </div>
+
+    <!-- קרן השתלמות -->
+    <div class="admin-section">
+      <h2>קרן השתלמות</h2>
+
+      <div class="admin-form">
+        <input id="hishtalmut-value" type="number" placeholder="שווי נוכחי (₪)">
+        <input id="hishtalmut-profit" type="number" placeholder="רווח/הפסד (₪)">
+        <button class="admin-btn" onclick="saveHishtalmut()">שמור</button>
+      </div>
+    </div>
+
+    <!-- בנקים -->
+    <div class="admin-section">
+      <h2>בנקים</h2>
+
+      <div class="admin-form">
+        <input id="bank-name" type="text" placeholder="שם הבנק">
+        <input id="bank-type" type="text" placeholder="סוג חשבון">
+        <input id="bank-value" type="number" placeholder="שווי (₪)">
+        <button class="admin-btn" onclick="saveBank()">שמור</button>
+      </div>
+    </div>
+
+    <!-- חיסכון לכל ילד -->
+    <div class="admin-section">
+      <h2>חיסכון לכל ילד</h2>
+
+      <div class="admin-form">
+        <input id="kid-name" type="text" placeholder="שם הילד">
+        <input id="kid-value" type="number" placeholder="שווי נוכחי (₪)">
+        <input id="kid-deposits" type="number" placeholder="הפקדות מצטברות (₪)">
+        <button class="admin-btn" onclick="saveKid()">שמור</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API_URL = "YOUR_APPSCRIPT_URL_HERE";
+
+    async function saveHishtalmut() {
+      const value = document.getElementById("hishtalmut-value").value;
+      const profit = document.getElementById("hishtalmut-profit").value;
+
+      await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "update_hishtalmut",
+          value,
+          profit
+        })
+      });
+
+      alert("עודכן בהצלחה!");
+    }
+
+    async function saveBank() {
+      const bank = document.getElementById("bank-name").value;
+      const type = document.getElementById("bank-type").value;
+      const value = document.getElementById("bank-value").value;
+
+      await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "update_bank",
+          bank,
+          type,
+          value
+        })
+      });
+
+      alert("עודכן בהצלחה!");
+    }
+
+    async function saveKid() {
+      const name = document.getElementById("kid-name").value;
+      const value = document.getElementById("kid-value").value;
+      const deposits = document.getElementById("kid-deposits").value;
+
+      await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "update_kid",
+          name,
+          value,
+          deposits
+        })
+      });
+
+      alert("עודכן בהצלחה!");
+    }
+
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+  </script>
+
+</body>
+</html>
