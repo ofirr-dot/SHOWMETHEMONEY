@@ -17,6 +17,7 @@
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
     <a href="tax.html" class="nav-item active"><span class="icon">🧾</span> מס רווחי הון</a>
@@ -32,6 +33,7 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- סיכום עליון -->
     <div class="cards-row">
       <div class="card" style="padding:20px;">
         <h3>סיכום מס</h3>
@@ -41,6 +43,7 @@
       </div>
     </div>
 
+    <!-- טבלה -->
     <div class="realized-table-wrapper">
       <table id="tax-table">
         <thead>
@@ -108,18 +111,25 @@
         tbody.appendChild(tr);
       });
 
+      const net = totalProfit - totalTax;
+
       summaryRow.innerHTML = `
         <td colspan="3" style="text-align:center; padding:15px; font-size:18px;">
-          סה״כ רווח לא ממומש: ₪${format(totalProfit)} · מס 25%: ₪${format(totalTax)}
+          סה״כ רווח לא ממומש: ₪${format(totalProfit)} ·
+          מס 25%: ₪${format(totalTax)} ·
+          <span style="font-weight:bold;">נטו לאחר מס: ₪${format(net)}</span>
         </td>
       `;
 
       taxSummary.innerHTML = `
         רווח כולל: <span class="value-positive">₪${format(totalProfit)}</span><br>
-        מס 25% לתשלום: <span class="value-negative">₪${format(totalTax)}</span>
+        מס 25% לתשלום: <span class="value-negative">₪${format(totalTax)}</span><br><br>
+        <b>נטו לאחר מס:</b>
+        <span class="value-positive">₪${format(net)}</span>
       `;
     }
 
+    // מצב כהה/בהיר
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
       themeToggle.textContent =
