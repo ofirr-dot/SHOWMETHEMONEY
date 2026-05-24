@@ -5,6 +5,7 @@
   <title>בנקים – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     th.sortable { cursor: pointer; }
     th.sortable:hover { opacity: 0.7; }
@@ -27,26 +28,19 @@
 
   <div class="page">
 
+    <!-- כרטיס עליון קצר -->
+    <div class="card" style="padding:15px; margin-bottom:20px; font-size:18px;">
+      <span id="banks-total-value-mini">שווי כולל: ₪0</span> ·
+      <span id="banks-total-accounts-mini">חשבונות: 0</span> ·
+      <span id="banks-usd-rate-mini">USD: —</span>
+    </div>
+
     <div class="page-header">
       <div>
         <h1>בנקים</h1>
         <div class="page-subtitle" id="banks-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
-    </div>
-
-    <div class="cards-row">
-
-      <div class="card">
-        <div class="card-title">שווי כולל</div>
-        <div class="card-main" id="banks-total-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">מספר חשבונות</div>
-        <div class="card-main" id="banks-total-accounts">0</div>
-      </div>
-
     </div>
 
     <!-- טבלה -->
@@ -119,14 +113,20 @@
         })
         .filter(r => r.ils > 0);
 
-      document.getElementById("banks-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
+      const now = new Date().toLocaleString("he-IL");
 
-      document.getElementById("banks-total-value").innerText =
-        "₪" + format(rows.reduce((s, r) => s + r.ils, 0));
+      document.getElementById("banks-timestamp").innerText = now;
 
-      document.getElementById("banks-total-accounts").innerText =
-        rows.length;
+      const totalIls = rows.reduce((s, r) => s + r.ils, 0);
+
+      document.getElementById("banks-total-value-mini").innerText =
+        "שווי כולל: ₪" + format(totalIls);
+
+      document.getElementById("banks-total-accounts-mini").innerText =
+        "חשבונות: " + rows.length;
+
+      document.getElementById("banks-usd-rate-mini").innerText =
+        "USD: " + usdRate + " (" + now + ")";
 
       renderTable();
       enableSorting();
