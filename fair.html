@@ -5,6 +5,34 @@
   <title>FAIR – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    table th, table td {
+      text-align: center;
+    }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90px;
+    }
+  </style>
 </head>
 
 <body class="theme-fair">
@@ -31,29 +59,16 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- כרטיסים -->
-    <div class="cards-row">
-
-      <div class="card">
-        <div class="card-title">שווי כולל</div>
-        <div class="card-main" id="fair-total-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="fair-total-pl">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">תשואה</div>
-        <div class="card-main" id="fair-total-yield">0%</div>
-      </div>
-
+    <!-- בועות ממורכזות -->
+    <div class="bubble-row">
+      <div class="bubble" id="fair-total-value-bubble">שווי כולל: ₪0</div>
+      <div class="bubble" id="fair-total-pl-bubble">רווח כולל: ₪0</div>
+      <div class="bubble" id="fair-total-yield-bubble">תשואה: 0%</div>
     </div>
 
     <!-- טבלה -->
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">רשימת קרנות FAIR</h2>
+      <h2 style="font-size:16px;margin-bottom:10px; text-align:center;">רשימת קרנות FAIR</h2>
 
       <table>
         <thead>
@@ -72,10 +87,10 @@
       </table>
     </div>
 
-    <!-- גרף עוגה קטן בתחתית -->
+    <!-- גרף עוגה -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי קרן</h3>
+        <h3 style="margin-bottom:10px; font-size:15px; text-align:center;">התפלגות לפי קרן</h3>
         <canvas id="fair-chart" height="80"></canvas>
       </div>
     </div>
@@ -114,15 +129,17 @@
       const totalYield =
         totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
 
-      document.getElementById("fair-total-value").innerText =
-        "₪" + format(totalValue);
+      // בועות
+      document.getElementById("fair-total-value-bubble").innerText =
+        "שווי כולל: ₪" + format(totalValue);
 
-      document.getElementById("fair-total-pl").innerText =
-        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+      document.getElementById("fair-total-pl-bubble").innerText =
+        "רווח כולל: " + (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
 
-      document.getElementById("fair-total-yield").innerText =
-        totalYield.toFixed(2) + "%";
+      document.getElementById("fair-total-yield-bubble").innerText =
+        "תשואה: " + totalYield.toFixed(2) + "%";
 
+      // טבלה
       const tbody = document.getElementById("fair-table-body");
       tbody.innerHTML = "";
 
@@ -144,6 +161,7 @@
         tbody.appendChild(tr);
       });
 
+      // גרף
       const ctx = document.getElementById("fair-chart");
       if (ctx) {
         new Chart(ctx, {
