@@ -7,8 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    th.sortable { cursor: pointer; }
+    th.sortable { cursor: pointer; text-align:center; }
     th.sortable:hover { opacity: 0.7; }
+    td { text-align:center; }
 
     .bubble-row {
       display: flex;
@@ -93,8 +94,8 @@
           <tr>
             <th class="sortable" data-col="bank">בנק ⬍</th>
             <th class="sortable" data-col="type">סוג חשבון ⬍</th>
-            <th class="sortable" data-col="ils">שווי נוכחי (₪) ⬍</th>
             <th class="sortable" data-col="usd">שווי ($) ⬍</th>
+            <th class="sortable" data-col="ils">שווי נוכחי (₪) ⬍</th>
           </tr>
         </thead>
 
@@ -149,8 +150,8 @@
           return {
             bank: b.bank || b["בנק"],
             type: b.type || b["סוג חשבון"],
-            ils,
-            usd
+            usd,
+            ils
           };
         })
         .filter(r => r.ils > 0);
@@ -189,8 +190,8 @@
         tr.innerHTML = `
           <td>${r.bank}</td>
           <td>${r.type}</td>
-          <td>₪${format(r.ils)}</td>
           <td>${r.usd ? "$" + format(r.usd) : "—"}</td>
+          <td>₪${format(r.ils)}</td>
         `;
         tbody.appendChild(tr);
       });
