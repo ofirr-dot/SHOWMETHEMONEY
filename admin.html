@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>ניהול נתונים – Show Me The Money</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    :root { --card-bg:#fff; --page-bg:#f5f7fb; --text:#222; }
+    :root{--card-bg:#fff;--page-bg:#f5f7fb;--text:#222}
     body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--page-bg);color:var(--text);direction:rtl}
     .top-nav{display:flex;gap:12px;padding:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);align-items:center}
     .nav-item{ text-decoration:none;color:var(--text);padding:6px 10px;border-radius:6px }
@@ -50,7 +50,6 @@
     <div id="kids-cards" class="card-list"></div>
   </div>
 
-  <!-- MODAL -->
   <div id="modal-overlay" class="modal-overlay">
     <div class="modal">
       <div class="modal-close" onclick="closeModal()">✕</div>
@@ -61,38 +60,13 @@
   </div>
 
   <script>
-    // החלף כאן אם יש לך URL חדש אחרי Deploy
+    // החלף ל-URL החדש אם קיבלת Deploy חדש
     const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
     let currentEdit = null;
 
     function normalizeDisplay(s) {
       if (s === null || s === undefined) return "";
       return String(s).trim().replace(/\u00A0/g, " ").replace(/\s+/g, " ");
-    }
-
-    function isInstructionBubble(rawBank, rawNotes) {
-      const bank = normalizeDisplay(rawBank).toLowerCase();
-      const notes = normalizeDisplay(rawNotes).toLowerCase();
-
-      const instructionPhrases = [
-        "הזן יתרת עדכנית",
-        "שווי בשקלים מחושב",
-        "חשבונות ils",
-        "לאחר עדכון",
-        "ניתן להוסיף שירותים",
-        "הוראה"
-      ];
-
-      if (/^[1-5]\s*[.\-]/.test(bank) || /^[1-5]\s+/.test(bank)) return true;
-
-      for (const p of instructionPhrases) {
-        if (bank.indexOf(p) !== -1) return true;
-        if (notes.indexOf(p) !== -1) return true;
-      }
-
-      if (bank.length < 4 && (bank.indexOf("הזן") !== -1 || bank.indexOf("סוג") !== -1)) return true;
-
-      return false;
     }
 
     async function loadData() {
@@ -105,11 +79,17 @@
           const bank = b.bank || "";
           const type = b.type || "";
           const notes = b.notes || "";
-
           if (!bank && !type) return false;
           if (String(bank).indexOf("סה\"כ") !== -1 || String(bank).toLowerCase().indexOf("סהכ") !== -1) return false;
           if (String(type).trim() === "הוראה") return false;
-          if (isInstructionBubble(bank, notes)) return false;
+          // הסרת בועות/הנחיות: אם השם מתחיל ב-1..5 או מכיל ביטויים ידועים
+          const bankLower = normalizeDisplay(bank).toLowerCase();
+          const notesLower = normalizeDisplay(notes).toLowerCase();
+          if (/^[1-5]\s*[.\-]/.test(bankLower) || /^[1-5]\s+/.test(bankLower)) return false;
+          const instructionPhrases = ["הזן יתרת עדכנית","שווי בשקלים מחושב","חשבונות ils","לאחר עדכון","ניתן להוסיף שירותים","הוראה"];
+          for (const p of instructionPhrases) {
+            if (bankLower.indexOf(p) !== -1 || notesLower.indexOf(p) !== -1) return false;
+          }
           return true;
         });
 
@@ -146,7 +126,6 @@
         container.innerHTML = `<div style="color:#666">אין בנקים להצגה</div>`;
         return;
       }
-
       container.innerHTML = banks.map(b => `
         <div class="admin-card">
           <div class="admin-card-title">${escapeHtml(b.bank)}</div>
@@ -163,7 +142,6 @@
         container.innerHTML = `<div style="color:#666">אין חיסכון לילדים להצגה</div>`;
         return;
       }
-
       container.innerHTML = kids.map(k => `
         <div class="admin-card">
           <div class="admin-card-title">${escapeHtml(k.childName || k.name || "")}</div>
@@ -182,18 +160,15 @@
         "עריכת קרן השתלמות";
 
       let fields = "";
-
       if (type === "hishtalmut") {
         fields += `<input id="f-value" value="${escapeHtml(data.value || 0)}" placeholder="שווי (₪)" type="number">`;
         fields += `<input id="f-profit" value="${escapeHtml(data.profit || 0)}" placeholder="רווח (₪)" type="number">`;
       }
-
       if (type === "bank") {
         fields += `<input id="f-bank" value="${escapeHtml(data.bank || '')}" placeholder="שם הבנק">`;
         fields += `<input id="f-type" value="${escapeHtml(data.type || '')}" placeholder="סוג חשבון">`;
         fields += `<input id="f-value" value="${escapeHtml(data.valueIls || 0)}" placeholder="שווי (₪)" type="number">`;
       }
-
       if (type === "kid") {
         fields += `<input id="f-name" value="${escapeHtml(data.childName || data.name || '')}" placeholder="שם הילד">`;
         fields += `<input id="f-value" value="${escapeHtml(data.value || data.valueIls || 0)}" placeholder="שווי (₪)" type="number">`;
@@ -208,10 +183,9 @@
       document.getElementById("modal-overlay").style.display = "none";
     }
 
-    // שמירה: שולח כ‑form-urlencoded כדי למנוע preflight CORS
+    // שולח כ‑form-urlencoded כדי למנוע preflight CORS
     async function saveModal() {
       if (!currentEdit) return alert("אין מה לשמור");
-
       const { type } = currentEdit;
       let payload = { action: "" };
 
@@ -240,20 +214,15 @@
       try {
         const params = new URLSearchParams();
         for (const k in payload) {
-          if (payload[k] !== undefined && payload[k] !== null) {
-            params.append(k, String(payload[k]));
-          }
+          if (payload[k] !== undefined && payload[k] !== null) params.append(k, String(payload[k]));
         }
 
-        const res = await fetch(API_URL, {
-          method: "POST",
-          body: params
-        });
-
+        const res = await fetch(API_URL, { method: "POST", body: params });
         const json = await res.json();
 
         if (!json.ok) {
-          console.error("Server error detail:", json.debug || json);
+          console.error("Server error detail:", json);
+          // אם יש debug — ראה בקונסול; למשתמש תוצג הודעה קצרה
           alert("שגיאה בשמירה: " + (json.error || "לא ידוע") + ". בדוק את ה‑Console לפרטים.");
           return;
         }
@@ -269,12 +238,7 @@
 
     function escapeHtml(s) {
       if (s === null || s === undefined) return "";
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
     }
 
     loadData();
