@@ -5,35 +5,26 @@
   <title>ניהול נתונים – Show Me The Money</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    :root {
-      --card-bg: #fff;
-      --page-bg: #f5f7fb;
-      --text: #222;
-    }
-    body { margin:0; font-family: Arial, Helvetica, sans-serif; background:var(--page-bg); color:var(--text); direction:rtl; }
-    .top-nav { display:flex; gap:12px; padding:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.06); align-items:center; }
-    .nav-item { text-decoration:none; color:var(--text); padding:6px 10px; border-radius:6px; }
-    .nav-item.active { background:#007AFF; color:#fff; }
-    .page { max-width:1100px; margin:20px auto; padding:16px; }
-    .page-header h1 { margin:0 0 6px 0; }
-    .page-subtitle { color:#666; margin-bottom:12px; }
-
-    .card-list { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:16px; margin-top:12px; }
-    .admin-card { background:var(--card-bg); padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:8px; }
-    .admin-card-title { font-weight:700; font-size:16px; }
-    .admin-card-field { color:#444; font-size:14px; }
-    .edit-btn { margin-top:8px; padding:10px; background:#007AFF; color:white; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
-    .edit-btn:hover { background:#0063d6; }
-
-    /* modal */
-    .modal-overlay { position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,0.45); z-index:999; }
-    .modal { background:#fff; width:380px; padding:20px; border-radius:12px; box-shadow:0 6px 30px rgba(0,0,0,0.25); position:relative; }
-    .modal h2 { margin:0 0 12px 0; font-size:18px; }
-    .modal input { width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd; font-size:14px; }
-    .modal-save { width:100%; padding:12px; background:#007AFF; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px; }
-    .modal-close { position:absolute; top:10px; right:12px; cursor:pointer; font-size:18px; color:#666; }
-    .hidden { display:none !important; }
-    .debug-block { font-family:monospace; white-space:pre-wrap; background:#fff3; padding:8px; border-radius:8px; font-size:12px; color:#333; }
+    :root { --card-bg:#fff; --page-bg:#f5f7fb; --text:#222; }
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--page-bg);color:var(--text);direction:rtl}
+    .top-nav{display:flex;gap:12px;padding:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);align-items:center}
+    .nav-item{ text-decoration:none;color:var(--text);padding:6px 10px;border-radius:6px }
+    .nav-item.active{ background:#007AFF;color:#fff }
+    .page{max-width:1100px;margin:20px auto;padding:16px}
+    .page-header h1{margin:0 0 6px 0}
+    .page-subtitle{color:#666;margin-bottom:12px}
+    .card-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:12px}
+    .admin-card{background:var(--card-bg);padding:16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;gap:8px}
+    .admin-card-title{font-weight:700;font-size:16px}
+    .admin-card-field{color:#444;font-size:14px}
+    .edit-btn{margin-top:8px;padding:10px;background:#007AFF;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+    .modal-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.45);z-index:999}
+    .modal{background:#fff;width:380px;padding:20px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.25);position:relative}
+    .modal h2{margin:0 0 12px 0;font-size:18px}
+    .modal input{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ddd;font-size:14px}
+    .modal-save{width:100%;padding:12px;background:#007AFF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px}
+    .modal-close{position:absolute;top:10px;right:12px;cursor:pointer;font-size:18px;color:#666}
+    .hidden{display:none!important}
   </style>
 </head>
 <body>
@@ -57,9 +48,6 @@
 
     <h2>חיסכון לכל ילד</h2>
     <div id="kids-cards" class="card-list"></div>
-
-    <!-- אופציונלי: בלוק דיבאג מוסתר (ניתן להפעיל זמנית) -->
-    <div id="debug-output" class="debug-block hidden"></div>
   </div>
 
   <!-- MODAL -->
@@ -73,54 +61,86 @@
   </div>
 
   <script>
-    // כתובת ה‑API שלך (החלף אם קיבלת URL חדש אחרי Deploy)
     const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
-
     let currentEdit = null;
 
-    // טען נתונים מהשרת
+    // פונקציית נורמליזציה פשוטה להצגה/השוואה
+    function normalize(s) {
+      if (s === null || s === undefined) return "";
+      return String(s).trim().replace(/\u00A0/g, " ").replace(/\s+/g, " ");
+    }
+
+    // האם השורה היא "בועה" של הוראות (מספר 1-5 בתחילת הטקסט או ביטויים נפוצים)
+    function isInstructionBubble(rawBank, rawNotes) {
+      const bank = normalize(rawBank).toLowerCase();
+      const notes = normalize(rawNotes).toLowerCase();
+
+      // ביטויים ספציפיים שצולמו (הסר/הוסף לפי הצורך)
+      const instructionPhrases = [
+        "הזן יתרת עדכנית",
+        "שווי בשקלים מחושב",
+        "חשבונות ils",
+        "לאחר עדכון",
+        "ניתן להוסיף שירותים",
+        "הוראה"
+      ];
+
+      // בדיקה: מתחיל ב־"1." עד "5." או "1 " וכו'
+      if (/^[1-5]\s*[.\-]/.test(bank) || /^[1-5]\s+/.test(bank)) return true;
+
+      // בדיקה על שם הבנק וההערות
+      for (const p of instructionPhrases) {
+        if (bank.indexOf(p) !== -1) return true;
+        if (notes.indexOf(p) !== -1) return true;
+      }
+
+      // בדיקה כללית: אם השם קצר מאוד ולא נראה כמו שם מוסד (למשל מתחיל ב"הזן" או "סוג:")
+      if (bank.length < 4 && (bank.indexOf("הזן") !== -1 || bank.indexOf("סוג") !== -1)) return true;
+
+      return false;
+    }
+
     async function loadData() {
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
 
-        // אם השרת מחזיר שדה debug — מתעלמים ממנו (לא מציגים)
-        // סינון בנקים: לא להציג שורות מסוג "הוראה" או שורות שבהן הערות מכילות "הוראה"
         const banksRaw = Array.isArray(data.banks) ? data.banks : [];
+        // סינון: מסירים שורות מסוג הוראה, שורות שמכילות את ההנחיות שצילמת, ושורות "סה"כ"
         const banksFiltered = banksRaw.filter(b => {
-          const type = (b.type || "").toString().trim();
-          const bank = (b.bank || "").toString().trim();
-          const notes = (b.notes || "").toString().toLowerCase();
+          const bank = b.bank || "";
+          const type = b.type || "";
+          const notes = b.notes || "";
+
+          // סנן שורות ריקות
           if (!bank && !type) return false;
-          if (type === "הוראה" || bank === "הוראה") return false;
-          if (notes.indexOf("הוראה") !== -1) return false;
-          // אם השורה היא "סה\"כ" או דומה — סנן
-          if (bank.indexOf("סה") !== -1 && bank.indexOf("סה\"כ") !== -1) return false;
+
+          // סנן "סה"כ"
+          if (String(bank).indexOf("סה\"כ") !== -1 || String(bank).toLowerCase().indexOf("סהכ") !== -1) return false;
+
+          // סנן לפי שדה type אם הוא "הוראה"
+          if (String(type).trim() === "הוראה") return false;
+
+          // סנן לפי פונקציית ההוראות
+          if (isInstructionBubble(bank, notes)) return false;
+
           return true;
         });
 
         renderHishtalmut(data, banksRaw);
         renderBanks(banksFiltered);
         renderKids(Array.isArray(data.kids) ? data.kids : []);
-
-        // debug: אם תרצה לראות את ה‑debug, תבטל את השורה הבאה
-        // showDebug(data.debug || null);
-
       } catch (err) {
         console.error("Load error:", err);
         alert("שגיאה בטעינת הנתונים. בדוק את ה‑Console.");
       }
     }
 
-    // הצגת קרן השתלמות: מחפש שורה בשם "קרן השתלמות" בתוך הבנקים (כמו שהשרת מחזיר)
     function renderHishtalmut(apiData, banksRaw) {
-      // אם השרת מחזיר שדה hishtalmut מלא — השתמש בו, אחרת חפש בבנקים
       let hisht = apiData.hishtalmut || { value: 0, profit: 0 };
       if ((!hisht || !hisht.value) && Array.isArray(banksRaw)) {
         const found = banksRaw.find(b => (b.bank || "").toString().trim() === "קרן השתלמות");
-        if (found) {
-          hisht = { value: found.valueIls || 0, profit: found.profit || 0 };
-        }
+        if (found) hisht = { value: found.valueIls || 0, profit: found.profit || 0 };
       }
 
       const container = document.getElementById("hishtalmut-cards");
@@ -168,7 +188,6 @@
       `).join("");
     }
 
-    // פותח מודל עריכה
     function openModal(type, data) {
       currentEdit = { type, data };
       document.getElementById("modal-title").innerText =
@@ -203,7 +222,6 @@
       document.getElementById("modal-overlay").style.display = "none";
     }
 
-    // שמירה: שולח POST לשרת; מציג שגיאות מהשרת אם יש
     async function saveModal() {
       if (!currentEdit) return alert("אין מה לשמור");
 
@@ -242,7 +260,6 @@
         const json = await res.json();
 
         if (!json.ok) {
-          // אם השרת מחזיר debug — אל תציג אותו אוטומטית; הצג רק הודעת שגיאה קצרה
           console.error("Server error detail:", json.debug || json);
           alert("שגיאה בשמירה: " + (json.error || "לא ידוע") + ". בדוק את ה‑Console לפרטים.");
           return;
@@ -257,15 +274,6 @@
       }
     }
 
-    // פונקציה עזר להצגת debug (מוסתרת כברירת מחדל)
-    function showDebug(obj) {
-      const el = document.getElementById("debug-output");
-      if (!obj) { el.classList.add("hidden"); el.innerText = ""; return; }
-      el.classList.remove("hidden");
-      el.innerText = JSON.stringify(obj, null, 2);
-    }
-
-    // בריחה מתווים לפני הצגה ב‑HTML
     function escapeHtml(s) {
       if (s === null || s === undefined) return "";
       return String(s)
@@ -276,7 +284,6 @@
         .replace(/'/g, "&#039;");
     }
 
-    // התחלה
     loadData();
   </script>
 
