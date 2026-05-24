@@ -45,7 +45,7 @@
 
     </div>
 
-    <!-- גרף עוגה קטן -->
+    <!-- גרף עוגה -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
         <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
@@ -53,6 +53,7 @@
       </div>
     </div>
 
+    <!-- טבלה -->
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px;">רשימת חשבונות בנק</h2>
 
@@ -72,6 +73,17 @@
       </table>
     </div>
 
+    <!-- הוראות מסודרות -->
+    <div class="card" style="margin-top:20px; padding:20px;">
+      <h3 style="margin-bottom:10px;">הוראות</h3>
+      <ul style="line-height:1.8;">
+        <li>עדכן יתרה לאחר כניסה לאפליקציית הבנק.</li>
+        <li>שווי שקלי מחושב אוטומטית לפי שער הדולר בגיליון הגדרות.</li>
+        <li>חשבונות ILS אינם דורשים המרה (שער = 1).</li>
+        <li>לאחר עדכון — שלח למזמין לסיכום.</li>
+      </ul>
+    </div>
+
   </div>
 
   <script>
@@ -88,13 +100,14 @@
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const banks = data.banks || [];
+      const banks = (data.banks || [])
+        .filter(b => Number(b.valueIls || b["ערך בש״ח"] || 0) > 0); // ❗ מסיר שורות ריקות
 
       document.getElementById("banks-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
       const totalValue = banks.reduce(
-        (s, r) => s + Number(r["ערך בש״ח"] || r.valueIls || 0),
+        (s, r) => s + Number(r.valueIls || r["ערך בש״ח"] || 0),
         0
       );
 
@@ -108,12 +121,12 @@
       tbody.innerHTML = "";
 
       banks.forEach(b => {
-        const value = Number(b["ערך בש״ח"] || b.valueIls || 0);
+        const value = Number(b.valueIls || b["ערך בש״ח"] || 0);
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${b["בנק"] || b.bank || "—"}</td>
-          <td>${b["סוג חשבון"] || b.type || "—"}</td>
+          <td>${b.bank || b["בנק"]}</td>
+          <td>${b.type || b["סוג חשבון"]}</td>
           <td>₪${format(value)}</td>
         `;
         tbody.appendChild(tr);
@@ -124,9 +137,9 @@
         new Chart(ctx, {
           type: "pie",
           data: {
-            labels: banks.map(b => b["בנק"] || b.bank || "—"),
+            labels: banks.map(b => b.bank || b["בנק"]),
             datasets: [{
-              data: banks.map(b => Number(b["ערך בש״ח"] || b.valueIls || 0)),
+              data: banks.map(b => Number(b.valueIls || b["ערך בש״ח"])),
               backgroundColor: [
                 "#6A4FF7", "#0A8A2A", "#00A8A8",
                 "#FF8A3D", "#E84E89", "#4A90E2"
