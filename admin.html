@@ -61,21 +61,19 @@
   </div>
 
   <script>
+    // החלף כאן אם יש לך URL חדש אחרי Deploy
     const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
     let currentEdit = null;
 
-    // פונקציית נורמליזציה פשוטה להצגה/השוואה
-    function normalize(s) {
+    function normalizeDisplay(s) {
       if (s === null || s === undefined) return "";
       return String(s).trim().replace(/\u00A0/g, " ").replace(/\s+/g, " ");
     }
 
-    // האם השורה היא "בועה" של הוראות (מספר 1-5 בתחילת הטקסט או ביטויים נפוצים)
     function isInstructionBubble(rawBank, rawNotes) {
-      const bank = normalize(rawBank).toLowerCase();
-      const notes = normalize(rawNotes).toLowerCase();
+      const bank = normalizeDisplay(rawBank).toLowerCase();
+      const notes = normalizeDisplay(rawNotes).toLowerCase();
 
-      // ביטויים ספציפיים שצולמו (הסר/הוסף לפי הצורך)
       const instructionPhrases = [
         "הזן יתרת עדכנית",
         "שווי בשקלים מחושב",
@@ -85,16 +83,13 @@
         "הוראה"
       ];
 
-      // בדיקה: מתחיל ב־"1." עד "5." או "1 " וכו'
       if (/^[1-5]\s*[.\-]/.test(bank) || /^[1-5]\s+/.test(bank)) return true;
 
-      // בדיקה על שם הבנק וההערות
       for (const p of instructionPhrases) {
         if (bank.indexOf(p) !== -1) return true;
         if (notes.indexOf(p) !== -1) return true;
       }
 
-      // בדיקה כללית: אם השם קצר מאוד ולא נראה כמו שם מוסד (למשל מתחיל ב"הזן" או "סוג:")
       if (bank.length < 4 && (bank.indexOf("הזן") !== -1 || bank.indexOf("סוג") !== -1)) return true;
 
       return false;
@@ -106,24 +101,15 @@
         const data = await res.json();
 
         const banksRaw = Array.isArray(data.banks) ? data.banks : [];
-        // סינון: מסירים שורות מסוג הוראה, שורות שמכילות את ההנחיות שצילמת, ושורות "סה"כ"
         const banksFiltered = banksRaw.filter(b => {
           const bank = b.bank || "";
           const type = b.type || "";
           const notes = b.notes || "";
 
-          // סנן שורות ריקות
           if (!bank && !type) return false;
-
-          // סנן "סה"כ"
           if (String(bank).indexOf("סה\"כ") !== -1 || String(bank).toLowerCase().indexOf("סהכ") !== -1) return false;
-
-          // סנן לפי שדה type אם הוא "הוראה"
           if (String(type).trim() === "הוראה") return false;
-
-          // סנן לפי פונקציית ההוראות
           if (isInstructionBubble(bank, notes)) return false;
-
           return true;
         });
 
@@ -222,6 +208,7 @@
       document.getElementById("modal-overlay").style.display = "none";
     }
 
+    // שמירה: שולח כ‑form-urlencoded כדי למנוע preflight CORS
     async function saveModal() {
       if (!currentEdit) return alert("אין מה לשמור");
 
@@ -251,10 +238,16 @@
       }
 
       try {
+        const params = new URLSearchParams();
+        for (const k in payload) {
+          if (payload[k] !== undefined && payload[k] !== null) {
+            params.append(k, String(payload[k]));
+          }
+        }
+
         const res = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: params
         });
 
         const json = await res.json();
