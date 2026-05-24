@@ -7,50 +7,65 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    table th, table td { text-align: center; padding:8px; }
-    .bubble-row { display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap; }
-    .bubble { flex:1; background:var(--card-bg); padding:18px; border-radius:12px; text-align:center; font-size:18px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.15); display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:80px; }
-    .value-positive { color: #0a8a2a; font-weight:600; }
-    .value-negative { color: #e84e89; font-weight:600; }
-    .table-wrapper { overflow-x:auto; }
+    :root {
+      --card-bg: #fff;
+      --page-bg: #f5f7fb;
+      --text: #222;
+    }
+    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--page-bg); color:var(--text); direction:rtl; }
+    table { width:100%; border-collapse:collapse; }
+    table th, table td { text-align:center; padding:10px; border-bottom:1px solid #eee; }
+    .bubble-row { display:flex; gap:15px; margin-bottom:18px; flex-wrap:wrap; }
+    .bubble { flex:1; background:var(--card-bg); padding:16px; border-radius:12px; text-align:center; font-size:16px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.12); min-height:72px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+    .table-wrapper { overflow-x:auto; background:transparent; padding:8px 0; }
+    .value-positive { color:#0a8a2a; font-weight:600; }
+    .value-negative { color:#e84e89; font-weight:600; }
+    .cards-row { margin-top:20px; display:flex; justify-content:center; }
+    .card { background:var(--card-bg); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.06); width:100%; max-width:640px; box-sizing:border-box; }
+    /* קבענו גובה מקסימלי לגרף כדי שלא ימשוך את הדף למטה */
+    .chart-container { width:100%; max-height:320px; height:320px; position:relative; }
+    canvas { width:100% !important; height:100% !important; display:block; }
     @media (max-width:640px) {
-      .bubble { font-size:16px; min-height:70px; }
-      table th, table td { font-size:13px; padding:6px; }
+      .bubble { font-size:14px; min-height:64px; }
+      table th, table td { font-size:13px; padding:8px; }
+      .chart-container { height:260px; max-height:260px; }
     }
   </style>
 </head>
 
 <body class="theme-kids">
 
-  <button id="themeToggle" class="theme-btn">🌙</button>
+  <button id="themeToggle" class="theme-btn" style="position:fixed;left:12px;top:12px;z-index:50">🌙</button>
 
-  <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="kids.html" class="nav-item active"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+  <nav class="top-nav" style="display:flex;gap:8px;padding:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);align-items:center;">
+    <a href="index.html" class="nav-item">סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item">IBKR</a>
+    <a href="fair.html" class="nav-item">FAIR</a>
+    <a href="banks.html" class="nav-item">בנקים</a>
+    <a href="kids.html" class="nav-item active">חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item">מס רווחי הון</a>
   </nav>
 
-  <div class="page">
+  <div class="page" style="max-width:1100px;margin:20px auto;padding:16px;">
 
-    <div class="page-header">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
       <div>
-        <h1>חיסכון לכל ילד</h1>
-        <div class="page-subtitle" id="kids-timestamp"></div>
+        <h1 style="margin:0 0 6px 0">חיסכון לכל ילד</h1>
+        <div class="page-subtitle" id="kids-timestamp" style="color:#666;font-size:13px"></div>
       </div>
-      <div class="page-subtitle">Ofir</div>
+      <div class="page-subtitle" style="color:#666">Ofir</div>
     </div>
 
-    <div class="bubble-row">
+    <!-- בועות: שווי כולל, הפקדות כוללות, מספר ילדים -->
+    <div class="bubble-row" style="margin-top:14px;">
       <div class="bubble" id="kids-total-value-bubble">שווי כולל: ₪0</div>
-      <div class="bubble" id="kids-total-pl-bubble">רווח כולל: ₪0</div>
+      <div class="bubble" id="kids-total-deposits-bubble">הפקדות כוללות: ₪0</div>
       <div class="bubble" id="kids-count-bubble">מספר ילדים: 0</div>
     </div>
 
+    <!-- טבלה -->
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px; text-align:center;">רשימת ילדים</h2>
+      <h2 style="font-size:16px;margin-bottom:10px;text-align:center;">רשימת ילדים</h2>
 
       <table>
         <thead>
@@ -59,22 +74,23 @@
             <th>שווי נוכחי (₪)</th>
             <th>הפקדה בט"ל (₪)</th>
             <th>הפקדה הורים (₪)</th>
-            <th>רווח/הפסד (₪)</th>
             <th>מנהלת (שם החברה)</th>
           </tr>
         </thead>
 
         <tbody id="kids-table-body">
-          <tr><td colspan="6">טוען נתונים…</td></tr>
+          <tr><td colspan="5">טוען נתונים…</td></tr>
         </tbody>
-
       </table>
     </div>
 
-    <div class="cards-row" style="margin-top:24px;">
-      <div class="card" style="padding:20px; max-width:520px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px; text-align:center;">התפלגות לפי ילד</h3>
-        <canvas id="kids-chart" height="120"></canvas>
+    <!-- גרף עוגה בתחתית (מוגבל בגובה) -->
+    <div class="cards-row">
+      <div class="card">
+        <h3 style="margin:0 0 12px 0; font-size:15px; text-align:center;">התפלגות לפי ילד (שווי נוכחי)</h3>
+        <div class="chart-container">
+          <canvas id="kids-chart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -87,13 +103,22 @@
       return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
     }
 
-    // קבלת ערך בטוח מתוך האובייקט עם fallback לשמות ישנים
+    // קבלת ערך עם fallback לשמות ישנים
     function getField(obj, ...names) {
       for (const n of names) {
         if (obj[n] !== undefined && obj[n] !== null && obj[n] !== "") return obj[n];
       }
       return 0;
     }
+
+    // ברירת צבעים לגרף (מספיק צבעים לשורות רבות; אם יש יותר, צבעים יחזרו)
+    const CHART_COLORS = [
+      "#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89", "#4A90E2",
+      "#F5A623", "#7ED321", "#9B59B6", "#2ECC71", "#E67E22", "#3498DB"
+    ];
+
+    // שמירת מופע הגרף כדי להרוס לפני יצירה מחדש
+    let kidsChartInstance = null;
 
     async function loadKids() {
       try {
@@ -104,64 +129,94 @@
 
         document.getElementById("kids-timestamp").innerText = new Date().toLocaleString("he-IL");
 
+        // חישובים: שווי כולל והפקדות כוללות (טל + הורים)
         const totalValue = kids.reduce((s, r) => s + Number(getField(r, "valueIls", "value")), 0);
-        const totalProfit = kids.reduce((s, r) => s + Number(getField(r, "profitIls", "profit", "pl")), 0);
+        const totalDeposits = kids.reduce((s, r) => {
+          const tel = Number(getField(r, "depositsTel", "deposits", "deposits_tel"));
+          const parents = Number(getField(r, "depositsParents", "depositsParents", "deposits_parents"));
+          return s + tel + parents;
+        }, 0);
 
         document.getElementById("kids-total-value-bubble").innerText = "שווי כולל: ₪" + format(totalValue);
-        document.getElementById("kids-total-pl-bubble").innerText = "רווח כולל: " + (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+        document.getElementById("kids-total-deposits-bubble").innerText = "הפקדות כוללות: ₪" + format(totalDeposits);
         document.getElementById("kids-count-bubble").innerText = "מספר ילדים: " + kids.length;
 
         // טבלה
         const tbody = document.getElementById("kids-table-body");
         tbody.innerHTML = "";
 
-        kids.forEach(k => {
-          const name = getField(k, "childName", "name");
-          const value = Number(getField(k, "valueIls", "value"));
-          // הפקדות: קודם depositsTel, אחר כך deposits, אחר כך depositsParents fallback
-          const depositsTel = Number(getField(k, "depositsTel", "deposits", "deposits_tel"));
-          const depositsParents = Number(getField(k, "depositsParents", "depositsParents", "deposits_parents"));
-          const pl = Number(getField(k, "profitIls", "profit", "pl"));
-          const manager = getField(k, "manager", "provider", "company");
+        if (kids.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5">אין נתונים להצגה</td></tr>`;
+        } else {
+          kids.forEach(k => {
+            const name = getField(k, "childName", "name") || "—";
+            const value = Number(getField(k, "valueIls", "value"));
+            const depositsTel = Number(getField(k, "depositsTel", "deposits", "deposits_tel"));
+            const depositsParents = Number(getField(k, "depositsParents", "depositsParents", "deposits_parents"));
+            const manager = getField(k, "manager", "provider", "company") || "—";
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${escapeHtml(name)}</td>
-            <td>₪${format(value)}</td>
-            <td>₪${format(depositsTel)}</td>
-            <td>₪${format(depositsParents)}</td>
-            <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">${pl >= 0 ? '+' : ''}₪${format(pl)}</td>
-            <td>${escapeHtml(manager)}</td>
-          `;
-          tbody.appendChild(tr);
-        });
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${escapeHtml(name)}</td>
+              <td>₪${format(value)}</td>
+              <td>₪${format(depositsTel)}</td>
+              <td>₪${format(depositsParents)}</td>
+              <td>${escapeHtml(manager)}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
 
-        // גרף עוגה
+        // גרף עוגה — הגדרות שמונעות "משיכה" של הדף
         const ctx = document.getElementById("kids-chart");
         if (ctx) {
-          // נקה canvas אם יש גרף קודם
-          if (ctx._chartInstance) {
-            ctx._chartInstance.destroy();
-            ctx._chartInstance = null;
+          // השמדת מופע קודם אם קיים
+          if (kidsChartInstance) {
+            try { kidsChartInstance.destroy(); } catch (e) { /* ignore */ }
+            kidsChartInstance = null;
           }
 
-          const labels = kids.map(k => getField(k, "childName", "name") || "—");
-          const values = kids.map(k => Number(getField(k, "valueIls", "value")));
+          // הגבל מספר פריטים בגרף כדי לשמור על קריאות; אם יש יותר, נחלק לקבוצת "אחרים"
+          const MAX_SLICES = 12;
+          const labelsAll = kids.map(k => getField(k, "childName", "name") || "—");
+          const valuesAll = kids.map(k => Number(getField(k, "valueIls", "value")));
 
-          ctx._chartInstance = new Chart(ctx, {
+          let labels = labelsAll.slice();
+          let values = valuesAll.slice();
+
+          if (labels.length > MAX_SLICES) {
+            // מיינו לפי ערך ולקחנו את הגדולים ביותר
+            const pairs = labels.map((lab, i) => ({ lab, val: values[i] }));
+            pairs.sort((a,b) => b.val - a.val);
+            const top = pairs.slice(0, MAX_SLICES - 1);
+            const others = pairs.slice(MAX_SLICES - 1);
+            labels = top.map(p => p.lab);
+            values = top.map(p => p.val);
+            const othersSum = others.reduce((s,p) => s + p.val, 0);
+            labels.push("אחרים");
+            values.push(othersSum);
+          }
+
+          kidsChartInstance = new Chart(ctx, {
             type: "pie",
             data: {
               labels,
               datasets: [{
                 data: values,
-                backgroundColor: [
-                  "#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89", "#4A90E2", "#F5A623", "#7ED321"
-                ]
+                backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length])
               }]
             },
             options: {
-              plugins: { legend: { position: "bottom" } },
-              maintainAspectRatio: false
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: "bottom", labels: { boxWidth:12, padding:8 } },
+                tooltip: { callbacks: { label: ctx => {
+                  const v = ctx.raw || 0;
+                  return `${ctx.label}: ₪${format(v)}`;
+                }}}
+              },
+              layout: { padding: { top: 6, bottom: 6 } }
             }
           });
         }
@@ -169,7 +224,7 @@
       } catch (err) {
         console.error("LoadKids error:", err);
         const tbody = document.getElementById("kids-table-body");
-        tbody.innerHTML = `<tr><td colspan="6">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
       }
     }
 
@@ -183,6 +238,7 @@
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
     }
 
+    // טעינה ראשונית
     loadKids();
   </script>
 
