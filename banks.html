@@ -9,6 +9,38 @@
   <style>
     th.sortable { cursor: pointer; }
     th.sortable:hover { opacity: 0.7; }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .refresh-btn {
+      background: #4A90E2;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .refresh-btn:hover {
+      background: #357ABD;
+    }
   </style>
 </head>
 
@@ -28,11 +60,15 @@
 
   <div class="page">
 
-    <!-- כרטיס עליון קצר -->
-    <div class="card" style="padding:15px; margin-bottom:20px; font-size:18px;">
-      <span id="banks-total-value-mini">שווי כולל: ₪0</span> ·
-      <span id="banks-total-accounts-mini">חשבונות: 0</span> ·
-      <span id="banks-usd-rate-mini">USD: —</span>
+    <!-- שלוש בועות -->
+    <div class="bubble-row">
+      <div class="bubble" id="bubble-total-ils">שווי כולל: ₪0</div>
+      <div class="bubble" id="bubble-accounts">חשבונות: 0</div>
+      <div class="bubble" id="bubble-usd">
+        USD: —  
+        <br>
+        <button class="refresh-btn" onclick="refreshUsd()">רענן</button>
+      </div>
     </div>
 
     <div class="page-header">
@@ -80,6 +116,7 @@
 
     let rows = [];
     let sortState = {};
+    let usdRate = 0;
 
     function format(n) {
       return Number(n || 0).toLocaleString("he-IL", {
@@ -91,7 +128,7 @@
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const usdRate = data.ibkr?.summary?.usdRate || 3.6;
+      usdRate = data.ibkr?.summary?.usdRate || 3.6;
 
       rows = (data.banks || [])
         .map(b => {
@@ -119,18 +156,23 @@
 
       const totalIls = rows.reduce((s, r) => s + r.ils, 0);
 
-      document.getElementById("banks-total-value-mini").innerText =
+      document.getElementById("bubble-total-ils").innerText =
         "שווי כולל: ₪" + format(totalIls);
 
-      document.getElementById("banks-total-accounts-mini").innerText =
+      document.getElementById("bubble-accounts").innerText =
         "חשבונות: " + rows.length;
 
-      document.getElementById("banks-usd-rate-mini").innerText =
-        "USD: " + usdRate + " (" + now + ")";
+      document.getElementById("bubble-usd").innerHTML =
+        `USD: ${usdRate} <br><small>${now}</small><br>
+         <button class="refresh-btn" onclick="refreshUsd()">רענן</button>`;
 
       renderTable();
       enableSorting();
       renderChart();
+    }
+
+    function refreshUsd() {
+      loadBanks();
     }
 
     function renderTable() {
