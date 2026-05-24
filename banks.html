@@ -15,6 +15,7 @@
       display: flex;
       gap: 15px;
       margin-bottom: 25px;
+      flex-wrap:wrap;
     }
 
     .bubble {
@@ -23,14 +24,14 @@
       padding: 18px;
       border-radius: 12px;
       text-align: center;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 90px;
+      min-height: 80px;
     }
 
     .refresh-btn {
@@ -47,6 +48,9 @@
     .refresh-btn:hover {
       background: #357ABD;
     }
+
+    .usd-rate { font-size: 16px; margin-bottom:6px; color:#333; }
+    .usd-note { font-size:12px; color:#666; }
   </style>
 </head>
 
@@ -54,15 +58,7 @@
 
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item active"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
-  </nav>
+  <div id="site-header"></div>
 
   <div class="page">
 
@@ -71,9 +67,9 @@
       <div class="bubble" id="bubble-total-ils">שווי כולל: ₪0</div>
       <div class="bubble" id="bubble-accounts">חשבונות: 0</div>
       <div class="bubble" id="bubble-usd">
-        USD: —  
-        <br>
-        <button class="refresh-btn" onclick="refreshUsd()">רענן</button>
+        <div class="usd-rate" id="usd-rate-text">USD: —</div>
+        <div class="usd-note" id="usd-rate-note"></div>
+        <button class="refresh-btn" id="usd-refresh">רענן</button>
       </div>
     </div>
 
@@ -117,80 +113,131 @@
   </div>
 
   <script>
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
     let rows = [];
     let sortState = {};
     let usdRate = 0;
 
+    function safeNum(v) {
+      if (v === null || v === undefined || v === "") return 0;
+      const n = Number(String(v).replace(/\u00A0/g, "").replace(/,/g, ""));
+      return isNaN(n) ? 0 : n;
+    }
+
     function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
-      });
+      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
+    }
+
+    // קבלת שער מדויק ממספר מקומות בתשובת ה‑API
+    function extractUsdRate(api) {
+      // בדוק שדות נפוצים בסדר עדיפות
+      const candidates = [
+        api?.usdRate,
+        api?.usd_rate,
+        api?.ibkr?.summary?.usdRate,
+        api?.ibkr?.summary?.usd_rate,
+        api?.usd, // אם יש
+        api?.rate
+      ];
+      for (const c of candidates) {
+        const n = safeNum(c);
+        if (n > 0) return n;
+      }
+      return 0;
     }
 
     async function loadBanks() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
 
-      usdRate = data.ibkr?.summary?.usdRate || 3.6;
+        // שליפת שער עם fallback
+        usdRate = extractUsdRate(data) || 0;
 
-      rows = (data.banks || [])
-        .map(b => {
-          const ils = Number(b.valueIls || b["ערך בש״ח"] || 0);
+        // אם אין שער — נסה למצוא fxRate בשורות הבנקים (ממוצע)
+        const banksRaw = Array.isArray(data.banks) ? data.banks : [];
+        if (!usdRate) {
+          const fxList = banksRaw.map(b => safeNum(b.fxRate || b["USD/ILS"] || b.fx || 0)).filter(x => x > 0);
+          if (fxList.length > 0) {
+            // ממוצע משוקלל פשוט
+            usdRate = fxList.reduce((s,v) => s+v,0) / fxList.length;
+          }
+        }
 
-          const isUsd =
-            (b.currency || "").toUpperCase() === "USD" ||
-            (b.type || "").toLowerCase().includes("checking") ||
-            (b.type || "").toLowerCase().includes("savings");
+        // אם עדיין אין שער — השתמש בערך סביר כ‑fallback
+        if (!usdRate) usdRate = 3.6;
 
-          const usd = isUsd ? ils / usdRate : null;
+        // בנה שורות להצגה
+        rows = banksRaw.map(b => {
+          const ils = safeNum(b.valueIls || b["שווי בשקלים"] || b["ערך בש״ח"] || b.value || 0);
+          const currency = (b.currency || b.curr || b["מטבע"] || "").toString().trim();
+          const fxRate = safeNum(b.fxRate || b["USD/ILS"] || b.fx || 0);
+
+          // החלטה האם לחשב USD:
+          // אם יש שדה currency שמציין USD, או יש fxRate חיובי — נחשב
+          let usd = null;
+          if (currency.toUpperCase() === "USD") {
+            // אם יש ערךILS ונרצה להציג USD: USD = ILS / usdRate
+            usd = usdRate > 0 ? ils / usdRate : null;
+          } else if (fxRate > 0) {
+            // אם יש fxRate ספציפי לשורה — המרה לפי fxRate
+            usd = fxRate > 0 ? ils / fxRate : null;
+          } else {
+            // לא ברור שמדובר בדולר — השאר null
+            usd = null;
+          }
 
           return {
-            bank: b.bank || b["בנק"],
-            type: b.type || b["סוג חשבון"],
+            bank: b.bank || b["מוסד פיננסי"] || b["בנק"] || "—",
+            type: b.type || b["סוג חשבון"] || "",
             usd,
-            ils
+            ils,
+            raw: b
           };
-        })
-        .filter(r => r.ils > 0);
+        }).filter(r => r.ils > 0);
 
-      const now = new Date().toLocaleString("he-IL");
+        const now = new Date().toLocaleString("he-IL");
+        document.getElementById("banks-timestamp").innerText = now;
 
-      document.getElementById("banks-timestamp").innerText = now;
+        const totalIls = rows.reduce((s, r) => s + safeNum(r.ils), 0);
+        document.getElementById("bubble-total-ils").innerText = "שווי כולל: ₪" + format(totalIls);
+        document.getElementById("bubble-accounts").innerText = "חשבונות: " + rows.length;
 
-      const totalIls = rows.reduce((s, r) => s + r.ils, 0);
+        // הצגת שער ברור
+        document.getElementById("usd-rate-text").innerText = `1 USD = ₪${format(usdRate)}`;
+        document.getElementById("usd-rate-note").innerText = `מקור: API; עדכון: ${now}`;
 
-      document.getElementById("bubble-total-ils").innerText =
-        "שווי כולל: ₪" + format(totalIls);
-
-      document.getElementById("bubble-accounts").innerText =
-        "חשבונות: " + rows.length;
-
-      document.getElementById("bubble-usd").innerHTML =
-        `USD: ${usdRate}<br><small>${now}</small><br>
-         <button class="refresh-btn" onclick="refreshUsd()">רענן</button>`;
-
-      renderTable();
-      enableSorting();
-      renderChart();
+        renderTable();
+        enableSorting();
+        renderChart();
+      } catch (err) {
+        console.error("loadBanks error:", err);
+        document.getElementById("banks-table-body").innerHTML = `<tr><td colspan="4">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
+      }
     }
 
-    function refreshUsd() {
+    // רענון שער בלבד (מזמין את ה‑API מחדש)
+    document.getElementById("usd-refresh").addEventListener("click", () => {
+      // קריאה מהירה שמעדכנת רק השער והבועות
       loadBanks();
-    }
+    });
 
     function renderTable() {
       const tbody = document.getElementById("banks-table-body");
       tbody.innerHTML = "";
 
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4">אין חשבונות להצגה</td></tr>`;
+        return;
+      }
+
       rows.forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${r.bank}</td>
-          <td>${r.type}</td>
-          <td>${r.usd ? "$" + format(r.usd) : "—"}</td>
+          <td>${escapeHtml(r.bank)}</td>
+          <td>${escapeHtml(r.type)}</td>
+          <td>${r.usd !== null ? "$" + format(r.usd) : "—"}</td>
           <td>₪${format(r.ils)}</td>
         `;
         tbody.appendChild(tr);
@@ -199,9 +246,8 @@
 
     function enableSorting() {
       document.querySelectorAll("th.sortable").forEach(th => {
-        th.addEventListener("click", () => {
+        th.onclick = () => {
           const col = th.dataset.col;
-
           sortState[col] = !sortState[col];
 
           rows.sort((a, b) => {
@@ -211,7 +257,6 @@
             if (typeof A === "string") {
               return sortState[col] ? A.localeCompare(B) : B.localeCompare(A);
             }
-
             return sortState[col] ? A - B : B - A;
           });
 
@@ -220,20 +265,29 @@
           });
 
           th.innerHTML = th.innerHTML.replace("⬍", sortState[col] ? "⬆" : "⬇");
-
           renderTable();
-        });
+        };
       });
     }
 
     function renderChart() {
       const ctx = document.getElementById("banks-chart");
-      new Chart(ctx, {
+      if (!ctx) return;
+      // השמדת מופע קודם אם קיים
+      if (ctx._chartInstance) {
+        try { ctx._chartInstance.destroy(); } catch (e) {}
+        ctx._chartInstance = null;
+      }
+
+      const labels = rows.map(r => r.bank);
+      const data = rows.map(r => safeNum(r.ils));
+
+      ctx._chartInstance = new Chart(ctx, {
         type: "pie",
         data: {
-          labels: rows.map(r => r.bank),
+          labels,
           datasets: [{
-            data: rows.map(r => r.ils),
+            data,
             backgroundColor: [
               "#6A4FF7", "#0A8A2A", "#00A8A8",
               "#FF8A3D", "#E84E89", "#4A90E2"
@@ -241,17 +295,27 @@
           }]
         },
         options: {
-          plugins: { legend: { position: "bottom" } }
+          plugins: { legend: { position: "bottom" } },
+          maintainAspectRatio: false
         }
       });
     }
 
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
+    // כפתור אור/לילה
+    const themeToggleBtn = document.getElementById("themeToggle");
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggleBtn.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      });
+    }
 
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return "";
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    }
+
+    // טעינה ראשונית
     loadBanks();
   </script>
 
