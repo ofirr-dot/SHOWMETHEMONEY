@@ -19,9 +19,10 @@
     .admin-card-field{color:#444;font-size:14px}
     .edit-btn{margin-top:8px;padding:10px;background:#007AFF;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px}
     .modal-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.45);z-index:999}
-    .modal{background:#fff;width:420px;padding:20px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.25);position:relative}
+    .modal{background:#fff;width:460px;padding:20px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.25);position:relative}
     .modal h2{margin:0 0 12px 0;font-size:18px}
-    .modal input{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ddd;font-size:14px}
+    .modal label{display:block;margin:8px 0 4px 0;font-size:13px;color:#333}
+    .modal input, .modal select{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid #ddd;font-size:14px;box-sizing:border-box}
     .modal-save{width:100%;padding:12px;background:#007AFF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px}
     .modal-close{position:absolute;top:10px;right:12px;cursor:pointer;font-size:18px;color:#666}
     .hidden{display:none!important}
@@ -58,27 +59,14 @@
   </div>
 
   <script>
-    // החלף כאן אם יש לך URL חדש אחרי Deploy
+    // החלף ל-URL החדש אם קיבלת Deploy חדש
     const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+
     let currentEdit = null;
 
     function normalizeDisplay(s) {
       if (s === null || s === undefined) return "";
       return String(s).trim().replace(/\u00A0/g, " ").replace(/\s+/g, " ");
-    }
-
-    // סינון בועות/הנחיות (מניעת הצגת הטקסט שצילמת)
-    function isInstructionBubble(rawBank, rawNotes) {
-      const bank = normalizeDisplay(rawBank).toLowerCase();
-      const notes = normalizeDisplay(rawNotes).toLowerCase();
-      if (/^[1-5]\s*[.\-]/.test(bank) || /^[1-5]\s+/.test(bank)) return true;
-      const instructionPhrases = ["הזן יתרת עדכנית","שווי בשקלים מחושב","חשבונות ils","לאחר עדכון","ניתן להוסיף שירותים","הוראה"];
-      for (const p of instructionPhrases) {
-        if (bank.indexOf(p) !== -1) return true;
-        if (notes.indexOf(p) !== -1) return true;
-      }
-      if (bank.length < 4 && (bank.indexOf("הזן") !== -1 || bank.indexOf("סוג") !== -1)) return true;
-      return false;
     }
 
     async function loadData() {
@@ -94,7 +82,14 @@
           if (!bank && !type) return false;
           if (String(bank).indexOf("סה\"כ") !== -1 || String(bank).toLowerCase().indexOf("סהכ") !== -1) return false;
           if (String(type).trim() === "הוראה") return false;
-          if (isInstructionBubble(bank, notes)) return false;
+          // הסרת בועות/הנחיות (אם יש)
+          const bankLower = normalizeDisplay(bank).toLowerCase();
+          const notesLower = normalizeDisplay(notes).toLowerCase();
+          if (/^[1-5]\s*[.\-]/.test(bankLower) || /^[1-5]\s+/.test(bankLower)) return false;
+          const instructionPhrases = ["הזן יתרת עדכנית","שווי בשקלים מחושב","חשבונות ils","לאחר עדכון","ניתן להוסיף שירותים","הוראה"];
+          for (const p of instructionPhrases) {
+            if (bankLower.indexOf(p) !== -1 || notesLower.indexOf(p) !== -1) return false;
+          }
           return true;
         });
 
@@ -123,6 +118,7 @@
       `).join("");
     }
 
+    // כרטיסי חיסכון לכל ילד — תצוגה עם השמות החדשים
     function renderKids(kids) {
       const container = document.getElementById("kids-cards");
       if (!kids || kids.length === 0) {
@@ -130,14 +126,23 @@
         return;
       }
 
-      container.innerHTML = kids.map(k => `
-        <div class="admin-card">
-          <div class="admin-card-title">${escapeHtml(k.childName || k.name || "")}</div>
-          <div class="admin-card-field">שווי: ₪${Number(k.value || k.valueIls || 0)}</div>
-          <div class="admin-card-field">הפקדות: ₪${Number(k.deposits || 0)}</div>
-          <button class="edit-btn" onclick='openModal("kid", ${JSON.stringify(k).replace(/"/g,'&quot;')})'>ערוך</button>
-        </div>
-      `).join("");
+      container.innerHTML = kids.map(k => {
+        const name = k.childName || k.name || "";
+        const value = Number(k.value || k.valueIls || 0);
+        const depositsTel = Number(k.depositsTel || k.deposits || 0);
+        const depositsParents = Number(k.depositsParents || 0);
+        const manager = k.manager || k.provider || "";
+        return `
+          <div class="admin-card">
+            <div class="admin-card-title">${escapeHtml(name)}</div>
+            <div class="admin-card-field">שווי נוכחי: ₪${value}</div>
+            <div class="admin-card-field">הפקדה בט\"ל: ₪${depositsTel}</div>
+            <div class="admin-card-field">הפקדה הורים: ₪${depositsParents}</div>
+            <div class="admin-card-field">מנהלת: ${escapeHtml(manager)}</div>
+            <button class="edit-btn" onclick='openModal("kid", ${JSON.stringify(k).replace(/"/g,'&quot;')})'>ערוך</button>
+          </div>
+        `;
+      }).join("");
     }
 
     function openModal(type, data) {
@@ -147,21 +152,23 @@
         type === "bank" ? "עריכת בנק" :
         "עריכה";
 
-      let fields = "";
+      let html = "";
 
       if (type === "bank") {
-        fields += `<input id="f-bank" value="${escapeHtml(data.bank || '')}" placeholder="שם הבנק">`;
-        fields += `<input id="f-type" value="${escapeHtml(data.type || '')}" placeholder="סוג חשבון">`;
-        fields += `<input id="f-value" value="${escapeHtml(data.valueIls || 0)}" placeholder="שווי (₪)" type="number">`;
+        html += `<label>שם הבנק</label><input id="f-bank" value="${escapeHtml(data.bank || '')}" placeholder="שם הבנק">`;
+        html += `<label>סוג חשבון</label><input id="f-type" value="${escapeHtml(data.type || '')}" placeholder="סוג חשבון">`;
+        html += `<label>שווי (₪)</label><input id="f-value" value="${escapeHtml(data.valueIls || 0)}" placeholder="שווי (₪)" type="number">`;
       }
 
       if (type === "kid") {
-        fields += `<input id="f-name" value="${escapeHtml(data.childName || data.name || '')}" placeholder="שם הילד">`;
-        fields += `<input id="f-value" value="${escapeHtml(data.value || data.valueIls || 0)}" placeholder="שווי (₪)" type="number">`;
-        fields += `<input id="f-deposits" value="${escapeHtml(data.deposits || 0)}" placeholder="הפקדות (₪)" type="number">`;
+        html += `<label>שם</label><input id="f-name" value="${escapeHtml(data.childName || data.name || '')}" placeholder="שם הילד">`;
+        html += `<label>שווי נוכחי (₪)</label><input id="f-value" value="${escapeHtml(data.value || data.valueIls || 0)}" placeholder="שווי נוכחי" type="number">`;
+        html += `<label>הפקדה בט\"ל (₪)</label><input id="f-depositsTel" value="${escapeHtml(data.depositsTel || data.deposits || 0)}" placeholder="הפקדה בט\"ל" type="number">`;
+        html += `<label>הפקדה הורים (₪)</label><input id="f-depositsParents" value="${escapeHtml(data.depositsParents || 0)}" placeholder="הפקדה הורים" type="number">`;
+        html += `<label>מנהלת (שם החברה)</label><input id="f-manager" value="${escapeHtml(data.manager || data.provider || '')}" placeholder="שם החברה המנהלת">`;
       }
 
-      document.getElementById("modal-fields").innerHTML = fields;
+      document.getElementById("modal-fields").innerHTML = html;
       document.getElementById("modal-overlay").style.display = "flex";
     }
 
@@ -173,7 +180,7 @@
     async function saveModal() {
       if (!currentEdit) return alert("אין מה לשמור");
 
-      const { type } = currentEdit;
+      const { type, data } = currentEdit;
       let payload = { action: "" };
 
       if (type === "bank") {
@@ -186,9 +193,13 @@
       } else if (type === "kid") {
         payload = {
           action: "update_kid",
+          // נשלח גם מזהה גולמי כדי לעזור לשרת למצוא את השורה המדויקת (אם קיים)
+          // אם אין id, השרת ימצא לפי שם
           name: document.getElementById("f-name").value,
           value: document.getElementById("f-value").value,
-          deposits: document.getElementById("f-deposits").value
+          depositsTel: document.getElementById("f-depositsTel").value,
+          depositsParents: document.getElementById("f-depositsParents").value,
+          manager: document.getElementById("f-manager").value
         };
       } else {
         return alert("סוג פריט לא נתמך לעריכה");
