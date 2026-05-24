@@ -10,6 +10,28 @@
     table th, table td {
       text-align: center;
     }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90px;
+    }
   </style>
 </head>
 
@@ -37,23 +59,11 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <div class="cards-row">
-
-      <div class="card">
-        <div class="card-title">שווי נוכחי</div>
-        <div class="card-main" id="hishtalmut-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח/הפסד</div>
-        <div class="card-main card-positive" id="hishtalmut-pl">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">תשואה</div>
-        <div class="card-main" id="hishtalmut-yield">0%</div>
-      </div>
-
+    <!-- שלוש בועות ממורכזות -->
+    <div class="bubble-row">
+      <div class="bubble" id="bubble-value">שווי נוכחי: ₪0</div>
+      <div class="bubble" id="bubble-pl">רווח/הפסד: ₪0</div>
+      <div class="bubble" id="bubble-yield">תשואה: 0%</div>
     </div>
 
     <div class="table-wrapper">
@@ -110,15 +120,17 @@
       const yieldPct =
         value > 0 ? (pl / (value - pl)) * 100 : 0;
 
-      document.getElementById("hishtalmut-value").innerText =
-        "₪" + format(value);
+      // בועות
+      document.getElementById("bubble-value").innerText =
+        "שווי נוכחי: ₪" + format(value);
 
-      document.getElementById("hishtalmut-pl").innerText =
-        (pl >= 0 ? "+" : "") + "₪" + format(pl);
+      document.getElementById("bubble-pl").innerText =
+        "רווח/הפסד: " + (pl >= 0 ? "+" : "") + "₪" + format(pl);
 
-      document.getElementById("hishtalmut-yield").innerText =
-        yieldPct.toFixed(2) + "%";
+      document.getElementById("bubble-yield").innerText =
+        "תשואה: " + yieldPct.toFixed(2) + "%";
 
+      // טבלה
       const tbody = document.getElementById("hishtalmut-table-body");
       tbody.innerHTML = `
         <tr>
@@ -131,6 +143,7 @@
         </tr>
       `;
 
+      // גרף
       const ctx = document.getElementById("hishtalmut-chart");
       if (ctx) {
         new Chart(ctx, {
