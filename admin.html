@@ -182,9 +182,18 @@
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      renderHishtalmut(data.hishtalmut);
-      renderBanks(data.banks);
-      renderKids(data.kids);
+      // קרן השתלמות – נשלפת מתוך הבנקים (שורה "קרן השתלמות")
+      const hishtalmutFromBanks = (data.banks || []).find(
+        b => b.bank === "קרן השתלמות"
+      ) || { valueIls: 0, profit: 0 };
+
+      renderHishtalmut({
+        value: hishtalmutFromBanks.valueIls || 0,
+        profit: hishtalmutFromBanks.profit || 0
+      });
+
+      renderBanks(data.banks || []);
+      renderKids(data.kids || []);
     }
 
     function renderHishtalmut(h) {
@@ -201,7 +210,13 @@
 
     function renderBanks(banks) {
       const container = document.getElementById("banks-cards");
-      container.innerHTML = banks.map(b => `
+
+      // סינון כרטיסיות לא רלוונטיות: הוראות + קרן השתלמות (שכבר מוצגת למעלה)
+      const filtered = banks.filter(
+        b => b.type !== "הוראה" && b.bank !== "קרן השתלמות"
+      );
+
+      container.innerHTML = filtered.map(b => `
         <div class="admin-card">
           <div class="admin-card-title">${b.bank}</div>
           <div class="admin-card-field">סוג: ${b.type}</div>
@@ -289,13 +304,26 @@
         };
       }
 
-      await fetch(API_URL, {
+      const res = await fetch(API_URL, {
         method: "POST",
         body: JSON.stringify(payload)
       });
 
+      let json;
+      try {
+        json = await res.json();
+      } catch (e) {
+        alert("שגיאה בתקשורת עם השרת");
+        return;
+      }
+
+      if (!json.ok) {
+        alert("שגיאה בשמירה: " + (json.error || "לא ידוע"));
+        return;
+      }
+
       closeModal();
-      loadData();
+      await loadData();
       alert("עודכן בהצלחה");
     }
 
