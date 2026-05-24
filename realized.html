@@ -2,14 +2,36 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>רווח ממומש</title>
+  <title>רווח ממומש – Show Me The Money</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
-  <div class="container">
-    <h1>💰 רווח ממומש</h1>
-    <p>כל המכירות שבוצעו + רווחים בדולר ובשקל</p>
+<body class="theme-realized">
+
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <!-- ניווט -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item active"><span class="icon">💰</span> רווח ממומש</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+  </nav>
+
+  <div class="page">
+
+    <div class="page-header">
+      <div>
+        <h1>💰 רווח ממומש</h1>
+        <div class="page-subtitle">כל המכירות שבוצעו + רווחים בדולר ובשקל</div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
 
     <div class="realized-table-wrapper">
       <table id="realized-table">
@@ -37,11 +59,12 @@
         </tfoot>
       </table>
     </div>
+
   </div>
 
   <script>
     let rows = [];
-    let sortState = {}; // שומר מצב מיון לכל עמודה
+    let sortState = {};
 
     function toNum(v) {
       return Number(v || 0);
@@ -121,7 +144,7 @@
         th.addEventListener("click", () => {
           const col = th.dataset.col;
 
-          sortState[col] = !sortState[col]; // הפוך כיוון מיון
+          sortState[col] = !sortState[col];
 
           rows.sort((a, b) => {
             let A = a[col];
@@ -139,7 +162,6 @@
             return sortState[col] ? A - B : B - A;
           });
 
-          // עדכון החץ
           document.querySelectorAll(".sortable").forEach(x => {
             x.innerHTML = x.innerHTML.replace("⬆", "⬍").replace("⬇", "⬍");
           });
@@ -151,7 +173,15 @@
       });
     }
 
+    // מצב כהה/בהיר
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+
     loadData();
   </script>
+
 </body>
 </html>
