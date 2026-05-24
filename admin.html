@@ -191,9 +191,9 @@
       const container = document.getElementById("hishtalmut-cards");
       container.innerHTML = `
         <div class="admin-card">
-          <div class="admin-card-title">${h.name || "קרן השתלמות"}</div>
-          <div class="admin-card-field">שווי: ₪${h.value || 0}</div>
-          <div class="admin-card-field">רווח: ₪${h.profit || 0}</div>
+          <div class="admin-card-title">קרן השתלמות</div>
+          <div class="admin-card-field">שווי: ₪${h.value}</div>
+          <div class="admin-card-field">רווח: ₪${h.profit}</div>
           <button class="edit-btn" onclick="openModal('hishtalmut', ${JSON.stringify(h).replace(/"/g, '&quot;')})">ערוך</button>
         </div>
       `;
@@ -234,9 +234,8 @@
       let fields = "";
 
       if (type === "hishtalmut") {
-        fields += `<input id="f-name" value="${data.name || ""}" placeholder="שם הקרן">`;
-        fields += `<input id="f-value" value="${data.value || 0}" placeholder="שווי (₪)" type="number">`;
-        fields += `<input id="f-profit" value="${data.profit || 0}" placeholder="רווח (₪)" type="number">`;
+        fields += `<input id="f-value" value="${data.value}" placeholder="שווי (₪)" type="number">`;
+        fields += `<input id="f-profit" value="${data.profit}" placeholder="רווח (₪)" type="number">`;
       }
 
       if (type === "bank") {
@@ -267,7 +266,6 @@
       if (type === "hishtalmut") {
         payload = {
           action: "update_hishtalmut",
-          name: document.getElementById("f-name").value,
           value: document.getElementById("f-value").value,
           profit: document.getElementById("f-profit").value
         };
