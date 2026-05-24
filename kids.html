@@ -30,6 +30,7 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- כרטיסים -->
     <div class="cards-row">
 
       <div class="card">
@@ -49,13 +50,7 @@
 
     </div>
 
-    <div class="cards-row">
-      <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות לפי ילד</h3>
-        <canvas id="kids-chart" height="120"></canvas>
-      </div>
-    </div>
-
+    <!-- טבלה -->
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px;">רשימת ילדים</h2>
 
@@ -75,6 +70,14 @@
         </tbody>
 
       </table>
+    </div>
+
+    <!-- גרף עוגה קטן בתחתית -->
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי ילד</h3>
+        <canvas id="kids-chart" height="80"></canvas>
+      </div>
     </div>
 
   </div>
@@ -99,15 +102,12 @@
         new Date().toLocaleString("he-IL");
 
       const totalValue = kids.reduce(
-        (s, r) => s + Number(r["שווי נוכחי (₪)"] || r.value || 0),
+        (s, r) => s + Number(r.valueIls || r.value || 0),
         0
       );
 
       const totalProfit = kids.reduce(
-        (s, r) =>
-          s +
-          (Number(r["שווי נוכחי (₪)"] || r.value || 0) -
-           Number(r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0)),
+        (s, r) => s + Number(r.profitIls || r.profit || 0),
         0
       );
 
@@ -123,15 +123,15 @@
       tbody.innerHTML = "";
 
       kids.forEach(k => {
-        const value = Number(k["שווי נוכחי (₪)"] || k.value || 0);
-        const deposits = Number(k["הפקדות מצטברות (₪)"] || k.totalDeposits || 0);
-        const pl = value - deposits;
+        const value = Number(k.valueIls || k.value || 0);
+        const deposits = Number(k.deposits || 0);
+        const pl = Number(k.profitIls || k.profit || 0);
         const yieldPct =
-          value > 0 ? ((pl / deposits) * 100).toFixed(2) : "0.00";
+          deposits > 0 ? ((pl / deposits) * 100).toFixed(2) : "0.00";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${k["שם"] || k.name || "—"}</td>
+          <td>${k.name}</td>
           <td>₪${format(value)}</td>
           <td>₪${format(deposits)}</td>
           <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
@@ -147,9 +147,9 @@
         new Chart(ctx, {
           type: "pie",
           data: {
-            labels: kids.map(k => k["שם"] || k.name || "—"),
+            labels: kids.map(k => k.name),
             datasets: [{
-              data: kids.map(k => Number(k["שווי נוכחי (₪)"] || k.value || 0)),
+              data: kids.map(k => Number(k.valueIls || k.value || 0)),
               backgroundColor: [
                 "#6A4FF7", "#0A8A2A", "#00A8A8",
                 "#FF8A3D", "#E84E89", "#4A90E2"
