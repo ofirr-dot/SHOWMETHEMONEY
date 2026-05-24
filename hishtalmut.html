@@ -5,6 +5,12 @@
   <title>קרן השתלמות – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    table th, table td {
+      text-align: center;
+    }
+  </style>
 </head>
 
 <body class="theme-hishtalmut">
@@ -18,7 +24,7 @@
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
     <a href="hishtalmut.html" class="nav-item active"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</span></a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
   </nav>
 
   <div class="page">
@@ -50,14 +56,6 @@
 
     </div>
 
-    <!-- גרף עוגה קטן -->
-    <div class="cards-row">
-      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות</h3>
-        <canvas id="hishtalmut-chart" height="80"></canvas>
-      </div>
-    </div>
-
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px;">פרטי הקרן</h2>
 
@@ -76,6 +74,14 @@
         </tbody>
 
       </table>
+    </div>
+
+    <!-- גרף עוגה — עכשיו למטה -->
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות</h3>
+        <canvas id="hishtalmut-chart" height="80"></canvas>
+      </div>
     </div>
 
   </div>
