@@ -11,8 +11,12 @@
       --card-bg: #fff;
       --page-bg: #f5f7fb;
       --text: #222;
+      --accent: #007AFF;
     }
     body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--page-bg); color:var(--text); direction:rtl; }
+    nav.top-nav { display:flex; gap:8px; padding:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.06); align-items:center; }
+    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
+
     table { width:100%; border-collapse:collapse; }
     table th, table td { text-align:center; padding:10px; border-bottom:1px solid #eee; }
     .bubble-row { display:flex; gap:15px; margin-bottom:18px; flex-wrap:wrap; }
@@ -22,22 +26,52 @@
     .value-negative { color:#e84e89; font-weight:600; }
     .cards-row { margin-top:20px; display:flex; justify-content:center; }
     .card { background:var(--card-bg); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.06); width:100%; max-width:640px; box-sizing:border-box; }
-    /* קבענו גובה מקסימלי לגרף כדי שלא ימשוך את הדף למטה */
+
+    /* הגבלת גובה לגרף */
     .chart-container { width:100%; max-height:320px; height:320px; position:relative; }
     canvas { width:100% !important; height:100% !important; display:block; }
+
+    /* כפתור אור/לילה מתוקן: לא יתפרס על כל המסך */
+    #themeToggle {
+      position: fixed;
+      left: 12px;
+      top: 12px;
+      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 10px;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    /* מצב כהה פשוט */
+    body.dark { background:#0f1720; color:#e6eef8; }
+    body.dark .card, body.dark .bubble, body.dark nav.top-nav { background:#0b1220; color:#e6eef8; box-shadow:none; border:1px solid rgba(255,255,255,0.03); }
+    body.dark #themeToggle { background:#0b1220; color:#fff; border:1px solid rgba(255,255,255,0.06); }
+
     @media (max-width:640px) {
       .bubble { font-size:14px; min-height:64px; }
       table th, table td { font-size:13px; padding:8px; }
       .chart-container { height:260px; max-height:260px; }
+      #themeToggle { width:40px; height:40px; left:10px; top:10px; }
     }
   </style>
 </head>
 
 <body class="theme-kids">
 
-  <button id="themeToggle" class="theme-btn" style="position:fixed;left:12px;top:12px;z-index:50">🌙</button>
+  <button id="themeToggle" aria-label="החלפת מצב אור/לילה">🌙</button>
 
-  <nav class="top-nav" style="display:flex;gap:8px;padding:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);align-items:center;">
+  <nav class="top-nav">
     <a href="index.html" class="nav-item">סקירה כללית</a>
     <a href="ibkr.html" class="nav-item">IBKR</a>
     <a href="fair.html" class="nav-item">FAIR</a>
@@ -46,7 +80,7 @@
     <a href="tax.html" class="nav-item">מס רווחי הון</a>
   </nav>
 
-  <div class="page" style="max-width:1100px;margin:20px auto;padding:16px;">
+  <div class="page">
 
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
       <div>
@@ -56,14 +90,12 @@
       <div class="page-subtitle" style="color:#666">Ofir</div>
     </div>
 
-    <!-- בועות: שווי כולל, הפקדות כוללות, מספר ילדים -->
     <div class="bubble-row" style="margin-top:14px;">
       <div class="bubble" id="kids-total-value-bubble">שווי כולל: ₪0</div>
       <div class="bubble" id="kids-total-deposits-bubble">הפקדות כוללות: ₪0</div>
       <div class="bubble" id="kids-count-bubble">מספר ילדים: 0</div>
     </div>
 
-    <!-- טבלה -->
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px;text-align:center;">רשימת ילדים</h2>
 
@@ -84,7 +116,6 @@
       </table>
     </div>
 
-    <!-- גרף עוגה בתחתית (מוגבל בגובה) -->
     <div class="cards-row">
       <div class="card">
         <h3 style="margin:0 0 12px 0; font-size:15px; text-align:center;">התפלגות לפי ילד (שווי נוכחי)</h3>
@@ -103,7 +134,6 @@
       return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
     }
 
-    // קבלת ערך עם fallback לשמות ישנים
     function getField(obj, ...names) {
       for (const n of names) {
         if (obj[n] !== undefined && obj[n] !== null && obj[n] !== "") return obj[n];
@@ -111,13 +141,11 @@
       return 0;
     }
 
-    // ברירת צבעים לגרף (מספיק צבעים לשורות רבות; אם יש יותר, צבעים יחזרו)
     const CHART_COLORS = [
       "#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89", "#4A90E2",
       "#F5A623", "#7ED321", "#9B59B6", "#2ECC71", "#E67E22", "#3498DB"
     ];
 
-    // שמירת מופע הגרף כדי להרוס לפני יצירה מחדש
     let kidsChartInstance = null;
 
     async function loadKids() {
@@ -129,7 +157,6 @@
 
         document.getElementById("kids-timestamp").innerText = new Date().toLocaleString("he-IL");
 
-        // חישובים: שווי כולל והפקדות כוללות (טל + הורים)
         const totalValue = kids.reduce((s, r) => s + Number(getField(r, "valueIls", "value")), 0);
         const totalDeposits = kids.reduce((s, r) => {
           const tel = Number(getField(r, "depositsTel", "deposits", "deposits_tel"));
@@ -141,7 +168,6 @@
         document.getElementById("kids-total-deposits-bubble").innerText = "הפקדות כוללות: ₪" + format(totalDeposits);
         document.getElementById("kids-count-bubble").innerText = "מספר ילדים: " + kids.length;
 
-        // טבלה
         const tbody = document.getElementById("kids-table-body");
         tbody.innerHTML = "";
 
@@ -167,16 +193,13 @@
           });
         }
 
-        // גרף עוגה — הגדרות שמונעות "משיכה" של הדף
         const ctx = document.getElementById("kids-chart");
         if (ctx) {
-          // השמדת מופע קודם אם קיים
           if (kidsChartInstance) {
             try { kidsChartInstance.destroy(); } catch (e) { /* ignore */ }
             kidsChartInstance = null;
           }
 
-          // הגבל מספר פריטים בגרף כדי לשמור על קריאות; אם יש יותר, נחלק לקבוצת "אחרים"
           const MAX_SLICES = 12;
           const labelsAll = kids.map(k => getField(k, "childName", "name") || "—");
           const valuesAll = kids.map(k => Number(getField(k, "valueIls", "value")));
@@ -185,7 +208,6 @@
           let values = valuesAll.slice();
 
           if (labels.length > MAX_SLICES) {
-            // מיינו לפי ערך ולקחנו את הגדולים ביותר
             const pairs = labels.map((lab, i) => ({ lab, val: values[i] }));
             pairs.sort((a,b) => b.val - a.val);
             const top = pairs.slice(0, MAX_SLICES - 1);
@@ -228,10 +250,14 @@
       }
     }
 
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
+    // כפתור אור/לילה: הגדרה בטוחה של האלמנט והאירוע
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      });
+    }
 
     function escapeHtml(s) {
       if (s === null || s === undefined) return "";
