@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>סקירה כללית – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="theme-overview">
@@ -15,17 +14,16 @@
   <!-- ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item active"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="dashboard.html" class="nav-item"><span class="icon">📊</span> Dashboard</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
   </nav>
 
   <div class="page">
 
-    <!-- כותרת -->
     <div class="page-header">
       <div>
         <h1>סקירה כללית</h1>
@@ -34,221 +32,114 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- כרטיסים -->
-    <div class="cards-row">
+    <!-- טבלה: סיכום לפי חשבון -->
+    <div class="card" style="padding:25px;">
+      <h3>סיכום לפי חשבון</h3>
 
-      <div class="card">
-        <div class="card-title">שווי כולל</div>
-        <div class="card-main" id="overview-total-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="overview-total-pl">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">תשואה כוללת</div>
-        <div class="card-main" id="overview-total-yield">0%</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">מספר חשבונות</div>
-        <div class="card-main" id="overview-total-accounts">0</div>
-      </div>
-
-    </div>
-
-    <!-- גרף -->
-    <div class="cards-row">
-      <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות תיק</h3>
-        <canvas id="overview-chart" height="120"></canvas>
-      </div>
-    </div>
-
-    <!-- טבלה -->
-    <div class="table-wrapper">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h2 style="font-size:16px;margin:0;">סיכום לפי חשבון</h2>
-        <span class="table-caption">FAIR · IBKR · בנקים · קרנות · ילדים</span>
-      </div>
-
-      <table>
+      <table id="accountsTable" class="styled-table">
         <thead>
           <tr>
-            <th>שם החשבון</th>
-            <th>שווי נוכחי</th>
-            <th>רווח/הפסד</th>
-            <th>תשואה</th>
-            <th>קטגוריה</th>
+            <th>חשבון <span class="sort" data-sort="name">⇅</span></th>
+            <th>שווי (₪) <span class="sort" data-sort="value">⇅</span></th>
+            <th>רווח (₪) <span class="sort" data-sort="profit">⇅</span></th>
+            <th>אחוז מהתיק <span class="sort" data-sort="percent">⇅</span></th>
           </tr>
         </thead>
-
-        <tbody id="overview-table-body">
-          <tr><td colspan="5">טוען נתונים…</td></tr>
-        </tbody>
-
+        <tbody></tbody>
       </table>
     </div>
-
-    <div id="overview-error" style="margin-top:10px;color:#ff4d4f;font-size:13px;display:none;"></div>
 
   </div>
 
   <script>
     const API_URL =
-  "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
-
+      "https://script.google.com/macros/s/AKfycbwkdPCUeSG9wZcCA7SczlRHwi2MXkqAoZCNlbgtbYoO43Vuk50ZK_G8RtVb-KsxvoDXKg/exec?mode=api";
 
     function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
+      return Number(n || 0).toLocaleString("he-IL");
+    }
+
+    let accounts = [];
+    let sortDirection = 1;
+
+    async function loadOverview() {
+
+      document.getElementById("overview-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const ibkr       = data.ibkr?.summary || {};
+      const fair       = data.fair || [];
+      const banks      = data.banks || [];
+      const kids       = data.kids || [];
+      const hishtalmut = data.hishtalmut || {};
+
+      // חישוב ערכים
+      const fairTotal       = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0);
+      const fairProfit      = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || 0), 0);
+
+      const banksTotal      = banks.reduce((s, r) => s + Number(r.valueIls || 0), 0);
+
+      const kidsTotal       = kids.reduce((s, r) => s + Number(r.value || 0), 0);
+      const kidsProfit      = kids.reduce((s, r) =>
+        s + (Number(r.value || 0) - Number(r.deposits || 0)), 0);
+
+      const hishtalmutTotal = Number(hishtalmut.value || 0);
+      const hishtalmutProfit = Number(hishtalmut.profit || 0);
+
+      const ibkrTotal       = ibkr.totalValueIls || 0;
+      const ibkrProfit      = ibkr.totalProfitIls || 0;
+
+      const totalValue =
+        fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
+
+      // בניית מערך חשבונות
+      accounts = [
+        { name: "IBKR", value: ibkrTotal, profit: ibkrProfit },
+        { name: "FAIR", value: fairTotal, profit: fairProfit },
+        { name: "בנקים", value: banksTotal, profit: 0 },
+        { name: "ילדים", value: kidsTotal, profit: kidsProfit },
+        { name: "השתלמות", value: hishtalmutTotal, profit: hishtalmutProfit }
+      ];
+
+      // חישוב אחוזים
+      accounts = accounts.map(a => ({
+        ...a,
+        percent: totalValue > 0 ? (a.value / totalValue) * 100 : 0
+      }));
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector("#accountsTable tbody");
+      tbody.innerHTML = "";
+
+      accounts.forEach(a => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${a.name}</td>
+          <td>₪${format(a.value)}</td>
+          <td>${a.profit >= 0 ? "+" : ""}₪${format(a.profit)}</td>
+          <td>${a.percent.toFixed(2)}%</td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
-    function showError(msg) {
-      const el = document.getElementById("overview-error");
-      el.style.display = "block";
-      el.textContent = msg;
-    }
+    // מיון
+    document.addEventListener("click", e => {
+      if (!e.target.classList.contains("sort")) return;
 
-    async function loadOverview() {
-      try {
-        const res = await fetch(API_URL);
-        if (!res.ok) {
-          showError("שגיאה בטעינת הנתונים מה‑API (HTTP " + res.status + ")");
-          return;
-        }
+      const field = e.target.dataset.sort;
+      sortDirection *= -1;
 
-        const raw = await res.json();
-        console.log("RAW API DATA:", raw);
+      accounts.sort((a, b) => (a[field] - b[field]) * sortDirection);
 
-        // מנסה לזהות את השורש הנכון של האובייקט
-        const data =
-          (raw && (raw.ibkr || raw.fair || raw.banks || raw.kids || raw.hishtalmut))
-            ? raw
-            : (raw.data || raw.result || raw.payload || raw.overview || {});
-
-        console.log("NORMALIZED DATA:", data);
-
-        const ibkrObj     = data.ibkr || {};
-        const ibkrSummary = ibkrObj.summary || {};
-        const fair        = data.fair || [];
-        const banks       = data.banks || [];
-        const kids        = data.kids || [];
-        const hishtalmut  = data.hishtalmut || {};
-
-        document.getElementById("overview-timestamp").innerText =
-          new Date().toLocaleString("he-IL");
-
-        // חישובי שווי
-        const fairTotal = fair.reduce((s, r) =>
-          s + Number(r["שווי נוכחי (₪)"] || r.valueIls || r.value || 0), 0);
-
-        const banksTotal = banks.reduce((s, r) =>
-          s + Number(r["ערך בש״ח"] || r.valueIls || r.value || 0), 0);
-
-        const kidsTotal = kids.reduce((s, r) =>
-          s + Number(r["שווי נוכחי (₪)"] || r.value || r.valueIls || 0), 0);
-
-        const hishtalmutTotal = Number(hishtalmut.value || 0);
-        const ibkrTotal       = Number(ibkrSummary.totalValueIls || 0);
-
-        const totalValue =
-          fairTotal + banksTotal + kidsTotal + hishtalmutTotal + ibkrTotal;
-
-        // חישובי רווח
-        const kidsProfit = kids.reduce((s, r) => {
-          const v = Number(r["שווי נוכחי (₪)"] || r.value || 0);
-          const d = Number(r["הפקדות מצטברות (₪)"] || r.totalDeposits || 0);
-          return s + (v - d);
-        }, 0);
-
-        const fairProfit = fair.reduce((s, r) =>
-          s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0), 0);
-
-        const hishtalmutProfit = Number(hishtalmut.profit || 0);
-        const ibkrProfit       = Number(ibkrSummary.totalProfitIls || 0);
-
-        const totalProfit =
-          kidsProfit + fairProfit + hishtalmutProfit + ibkrProfit;
-
-        const totalYield =
-          totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
-
-        // כרטיסים
-        document.getElementById("overview-total-value").innerText =
-          "₪" + format(totalValue);
-
-        document.getElementById("overview-total-pl").innerText =
-          (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
-
-        document.getElementById("overview-total-yield").innerText =
-          totalYield.toFixed(2) + "%";
-
-        document.getElementById("overview-total-accounts").innerText = 5;
-
-        // טבלת סיכום
-        const tbody = document.getElementById("overview-table-body");
-        tbody.innerHTML = "";
-
-        const rows = [
-          { name: "IBKR", value: ibkrTotal,       pl: ibkrProfit,       type: "השקעות" },
-          { name: "FAIR", value: fairTotal,       pl: fairProfit,       type: "קרנות" },
-          { name: "בנקים", value: banksTotal,     pl: 0,                type: "בנק" },
-          { name: "קרן השתלמות", value: hishtalmutTotal, pl: hishtalmutProfit, type: "פנסיה" },
-          { name: "חיסכון לכל ילד", value: kidsTotal, pl: kidsProfit,   type: "ילדים" }
-        ];
-
-        rows.forEach(acc => {
-          const tr = document.createElement("tr");
-          const yieldPct =
-            acc.value > 0 ? ((acc.pl / (acc.value - acc.pl)) * 100).toFixed(2) : "0.00";
-
-          tr.innerHTML = `
-            <td>${acc.name}</td>
-            <td>₪${format(acc.value)}</td>
-            <td class="${acc.pl >= 0 ? 'value-positive' : 'value-negative'}">
-              ${acc.pl >= 0 ? '+' : ''}₪${format(acc.pl)}
-            </td>
-            <td>${yieldPct}%</td>
-            <td>${acc.type}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        // גרף
-        const ctx = document.getElementById("overview-chart");
-        if (ctx) {
-          new Chart(ctx, {
-            type: "pie",
-            data: {
-              labels: rows.map(x => x.name),
-              datasets: [{
-                data: rows.map(x => x.value),
-                backgroundColor: [
-                  "#6A4FF7", "#0A8A2A", "#00A8A8",
-                  "#FF8A3D", "#E84E89"
-                ]
-              }]
-            },
-            options: {
-              plugins: { legend: { position: "bottom" } }
-            }
-          });
-        }
-
-        // אם אחרי כל זה totalValue עדיין 0 – מציג הודעה כדי שתראה שזה מה‑API
-        if (!totalValue) {
-          showError("ה‑API נטען, אבל כל השדות יצאו 0. בדוק שה‑summary של IBKR וה‑FAIR/בנקים/ילדים לא ריקים.");
-        }
-
-      } catch (err) {
-        console.error(err);
-        showError("שגיאה בטעינת הנתונים מה‑API: " + err);
-      }
-    }
+      renderTable();
+    });
 
     // מצב כהה
     document.getElementById("themeToggle").onclick = () => {
@@ -256,13 +147,6 @@
       themeToggle.textContent =
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
-
-    // Header דינמי
-    window.addEventListener("scroll", () => {
-      const nav = document.querySelector(".top-nav");
-      if (window.scrollY > 40) nav.classList.add("shrink");
-      else nav.classList.remove("shrink");
-    });
 
     loadOverview();
   </script>
