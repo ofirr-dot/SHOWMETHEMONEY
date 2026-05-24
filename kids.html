@@ -7,30 +7,15 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    table th, table td {
-      text-align: center;
-    }
-
-    .bubble-row {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .bubble {
-      flex: 1;
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 90px;
+    table th, table td { text-align: center; padding:8px; }
+    .bubble-row { display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap; }
+    .bubble { flex:1; background:var(--card-bg); padding:18px; border-radius:12px; text-align:center; font-size:18px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.15); display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:80px; }
+    .value-positive { color: #0a8a2a; font-weight:600; }
+    .value-negative { color: #e84e89; font-weight:600; }
+    .table-wrapper { overflow-x:auto; }
+    @media (max-width:640px) {
+      .bubble { font-size:16px; min-height:70px; }
+      table th, table td { font-size:13px; padding:6px; }
     }
   </style>
 </head>
@@ -44,7 +29,6 @@
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item active"><span class="icon">👶</span> חיסכון לכל ילד</a>
     <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
   </nav>
@@ -59,14 +43,12 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- שלוש בועות ממורכזות -->
     <div class="bubble-row">
       <div class="bubble" id="kids-total-value-bubble">שווי כולל: ₪0</div>
       <div class="bubble" id="kids-total-pl-bubble">רווח כולל: ₪0</div>
       <div class="bubble" id="kids-count-bubble">מספר ילדים: 0</div>
     </div>
 
-    <!-- טבלה -->
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px; text-align:center;">רשימת ילדים</h2>
 
@@ -75,119 +57,131 @@
           <tr>
             <th>שם</th>
             <th>שווי נוכחי (₪)</th>
-            <th>הפקדות מצטברות (₪)</th>
+            <th>הפקדה בט"ל (₪)</th>
+            <th>הפקדה הורים (₪)</th>
             <th>רווח/הפסד (₪)</th>
-            <th>תשואה</th>
+            <th>מנהלת (שם החברה)</th>
           </tr>
         </thead>
 
         <tbody id="kids-table-body">
-          <tr><td colspan="5">טוען נתונים…</td></tr>
+          <tr><td colspan="6">טוען נתונים…</td></tr>
         </tbody>
 
       </table>
     </div>
 
-    <!-- גרף עוגה בתחתית -->
-    <div class="cards-row">
-      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+    <div class="cards-row" style="margin-top:24px;">
+      <div class="card" style="padding:20px; max-width:520px; margin:auto;">
         <h3 style="margin-bottom:10px; font-size:15px; text-align:center;">התפלגות לפי ילד</h3>
-        <canvas id="kids-chart" height="80"></canvas>
+        <canvas id="kids-chart" height="120"></canvas>
       </div>
     </div>
 
   </div>
 
   <script>
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
     function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
-      });
+      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
+    }
+
+    // קבלת ערך בטוח מתוך האובייקט עם fallback לשמות ישנים
+    function getField(obj, ...names) {
+      for (const n of names) {
+        if (obj[n] !== undefined && obj[n] !== null && obj[n] !== "") return obj[n];
+      }
+      return 0;
     }
 
     async function loadKids() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
 
-      const kids = data.kids || [];
+        const kids = Array.isArray(data.kids) ? data.kids : [];
 
-      document.getElementById("kids-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
+        document.getElementById("kids-timestamp").innerText = new Date().toLocaleString("he-IL");
 
-      const totalValue = kids.reduce(
-        (s, r) => s + Number(r.valueIls || r.value || 0),
-        0
-      );
+        const totalValue = kids.reduce((s, r) => s + Number(getField(r, "valueIls", "value")), 0);
+        const totalProfit = kids.reduce((s, r) => s + Number(getField(r, "profitIls", "profit", "pl")), 0);
 
-      const totalProfit = kids.reduce(
-        (s, r) => s + Number(r.profitIls || r.profit || 0),
-        0
-      );
+        document.getElementById("kids-total-value-bubble").innerText = "שווי כולל: ₪" + format(totalValue);
+        document.getElementById("kids-total-pl-bubble").innerText = "רווח כולל: " + (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+        document.getElementById("kids-count-bubble").innerText = "מספר ילדים: " + kids.length;
 
-      // בועות
-      document.getElementById("kids-total-value-bubble").innerText =
-        "שווי כולל: ₪" + format(totalValue);
+        // טבלה
+        const tbody = document.getElementById("kids-table-body");
+        tbody.innerHTML = "";
 
-      document.getElementById("kids-total-pl-bubble").innerText =
-        "רווח כולל: " + (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+        kids.forEach(k => {
+          const name = getField(k, "childName", "name");
+          const value = Number(getField(k, "valueIls", "value"));
+          // הפקדות: קודם depositsTel, אחר כך deposits, אחר כך depositsParents fallback
+          const depositsTel = Number(getField(k, "depositsTel", "deposits", "deposits_tel"));
+          const depositsParents = Number(getField(k, "depositsParents", "depositsParents", "deposits_parents"));
+          const pl = Number(getField(k, "profitIls", "profit", "pl"));
+          const manager = getField(k, "manager", "provider", "company");
 
-      document.getElementById("kids-count-bubble").innerText =
-        "מספר ילדים: " + kids.length;
-
-      // טבלה
-      const tbody = document.getElementById("kids-table-body");
-      tbody.innerHTML = "";
-
-      kids.forEach(k => {
-        const value = Number(k.valueIls || k.value || 0);
-        const deposits = Number(k.deposits || 0);
-        const pl = Number(k.profitIls || k.profit || 0);
-        const yieldPct =
-          deposits > 0 ? ((pl / deposits) * 100).toFixed(2) : "0.00";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${k.name}</td>
-          <td>₪${format(value)}</td>
-          <td>₪${format(deposits)}</td>
-          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
-            ${pl >= 0 ? '+' : ''}₪${format(pl)}
-          </td>
-          <td>${yieldPct}%</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // גרף
-      const ctx = document.getElementById("kids-chart");
-      if (ctx) {
-        new Chart(ctx, {
-          type: "pie",
-          data: {
-            labels: kids.map(k => k.name),
-            datasets: [{
-              data: kids.map(k => Number(k.valueIls || k.value || 0)),
-              backgroundColor: [
-                "#6A4FF7", "#0A8A2A", "#00A8A8",
-                "#FF8A3D", "#E84E89", "#4A90E2"
-              ]
-            }]
-          },
-          options: {
-            plugins: { legend: { position: "bottom" } }
-          }
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(name)}</td>
+            <td>₪${format(value)}</td>
+            <td>₪${format(depositsTel)}</td>
+            <td>₪${format(depositsParents)}</td>
+            <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">${pl >= 0 ? '+' : ''}₪${format(pl)}</td>
+            <td>${escapeHtml(manager)}</td>
+          `;
+          tbody.appendChild(tr);
         });
+
+        // גרף עוגה
+        const ctx = document.getElementById("kids-chart");
+        if (ctx) {
+          // נקה canvas אם יש גרף קודם
+          if (ctx._chartInstance) {
+            ctx._chartInstance.destroy();
+            ctx._chartInstance = null;
+          }
+
+          const labels = kids.map(k => getField(k, "childName", "name") || "—");
+          const values = kids.map(k => Number(getField(k, "valueIls", "value")));
+
+          ctx._chartInstance = new Chart(ctx, {
+            type: "pie",
+            data: {
+              labels,
+              datasets: [{
+                data: values,
+                backgroundColor: [
+                  "#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89", "#4A90E2", "#F5A623", "#7ED321"
+                ]
+              }]
+            },
+            options: {
+              plugins: { legend: { position: "bottom" } },
+              maintainAspectRatio: false
+            }
+          });
+        }
+
+      } catch (err) {
+        console.error("LoadKids error:", err);
+        const tbody = document.getElementById("kids-table-body");
+        tbody.innerHTML = `<tr><td colspan="6">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
       }
     }
 
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
+      themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return "";
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    }
 
     loadKids();
   </script>
