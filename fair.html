@@ -30,6 +30,7 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- כרטיסים -->
     <div class="cards-row">
 
       <div class="card">
@@ -49,13 +50,7 @@
 
     </div>
 
-    <div class="cards-row">
-      <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">התפלגות לפי קרן</h3>
-        <canvas id="fair-chart" height="120"></canvas>
-      </div>
-    </div>
-
+    <!-- טבלה -->
     <div class="table-wrapper">
       <h2 style="font-size:16px;margin-bottom:10px;">רשימת קרנות FAIR</h2>
 
@@ -74,6 +69,14 @@
         </tbody>
 
       </table>
+    </div>
+
+    <!-- גרף עוגה קטן בתחתית -->
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי קרן</h3>
+        <canvas id="fair-chart" height="80"></canvas>
+      </div>
     </div>
 
   </div>
@@ -130,7 +133,7 @@
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${f["שם הקרן"] || f.name || "—"}</td>
+          <td>${f["שם הקרן"]}</td>
           <td>₪${format(value)}</td>
           <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
             ${pl >= 0 ? '+' : ''}₪${format(pl)}
@@ -145,9 +148,9 @@
         new Chart(ctx, {
           type: "pie",
           data: {
-            labels: fair.map(f => f["שם הקרן"] || f.name || "—"),
+            labels: fair.map(f => f["שם הקרן"]),
             datasets: [{
-              data: fair.map(f => Number(f["שווי נוכחי (₪)"] || f.valueIls || 0)),
+              data: fair.map(f => Number(f["שווי נוכחי (₪)"])),
               backgroundColor: [
                 "#6A4FF7", "#0A8A2A", "#00A8A8",
                 "#FF8A3D", "#E84E89", "#4A90E2"
