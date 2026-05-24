@@ -5,6 +5,34 @@
   <title>סקירה כללית – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    table th, table td {
+      text-align: center;
+    }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90px;
+    }
+  </style>
 </head>
 
 <body class="theme-overview">
@@ -35,34 +63,17 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- כרטיסים -->
-    <div class="cards-row">
-
-      <div class="card">
-        <div class="card-title">שווי כולל</div>
-        <div class="card-main" id="overview-total-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח כולל</div>
-        <div class="card-main card-positive" id="overview-total-pl">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">תשואה כוללת</div>
-        <div class="card-main" id="overview-total-yield">0%</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">מספר חשבונות</div>
-        <div class="card-main" id="overview-total-accounts">0</div>
-      </div>
-
+    <!-- בועות ממורכזות -->
+    <div class="bubble-row">
+      <div class="bubble" id="overview-total-value-bubble">שווי כולל: ₪0</div>
+      <div class="bubble" id="overview-total-pl-bubble">רווח כולל: ₪0</div>
+      <div class="bubble" id="overview-total-yield-bubble">תשואה כוללת: 0%</div>
+      <div class="bubble" id="overview-total-accounts-bubble">מספר חשבונות: 0</div>
     </div>
 
     <!-- טבלה -->
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">סיכום לפי חשבון</h2>
+      <h2 style="font-size:16px;margin-bottom:10px; text-align:center;">סיכום לפי חשבון</h2>
 
       <table id="accountsTable">
         <thead>
@@ -82,16 +93,16 @@
 
     <!-- גרף עמודות -->
     <div class="cards-row">
-      <div class="card" style="padding:25px;">
-        <h3 style="margin-bottom:15px;">שווי ורווח לפי חשבון</h3>
+      <div class="card" style="padding:25px; margin:auto;">
+        <h3 style="margin-bottom:15px; text-align:center;">שווי ורווח לפי חשבון</h3>
         <canvas id="overview-bar" height="140"></canvas>
       </div>
     </div>
 
-    <!-- גרף עוגה קטן בתחתית -->
+    <!-- גרף עוגה -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות תיק</h3>
+        <h3 style="margin-bottom:10px; font-size:15px; text-align:center;">התפלגות תיק</h3>
         <canvas id="overview-chart" height="80"></canvas>
       </div>
     </div>
@@ -142,16 +153,21 @@
       const totalProfit =
         fairProfit + kidsProfit + hishtalmutProfit + ibkrProfit;
 
-      document.getElementById("overview-total-value").innerText =
-        "₪" + format(totalValue);
+      const totalYield =
+        totalValue > 0 ? ((totalProfit / (totalValue - totalProfit)) * 100).toFixed(2) : "0.00";
 
-      document.getElementById("overview-total-pl").innerText =
-        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+      // בועות
+      document.getElementById("overview-total-value-bubble").innerText =
+        "שווי כולל: ₪" + format(totalValue);
 
-      document.getElementById("overview-total-yield").innerText =
-        totalValue > 0 ? ((totalProfit / (totalValue - totalProfit)) * 100).toFixed(2) + "%" : "0%";
+      document.getElementById("overview-total-pl-bubble").innerText =
+        "רווח כולל: " + (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
 
-      document.getElementById("overview-total-accounts").innerText = 5;
+      document.getElementById("overview-total-yield-bubble").innerText =
+        "תשואה כוללת: " + totalYield + "%";
+
+      document.getElementById("overview-total-accounts-bubble").innerText =
+        "מספר חשבונות: 5";
 
       accounts = [
         { name: "IBKR", value: ibkrTotal,       profit: ibkrProfit,       type: "השקעות" },
