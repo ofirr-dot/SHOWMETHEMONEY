@@ -31,6 +31,10 @@
       align-items: center;
       min-height: 90px;
     }
+
+    .bubble-profit { color: #0A8A2A; }   /* ירוק */
+    .bubble-tax { color: #D7263D; }      /* אדום */
+    .bubble-net { color: #1E6BFF; }      /* כחול */
   </style>
 </head>
 
@@ -58,11 +62,11 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- שלוש בועות ממורכזות -->
+    <!-- שלוש בועות ממורכזות וצבועות -->
     <div class="bubble-row">
-      <div class="bubble" id="bubble-profit">רווח כולל: ₪0</div>
-      <div class="bubble" id="bubble-tax">מס 25%: ₪0</div>
-      <div class="bubble" id="bubble-net">נטו לאחר מס: ₪0</div>
+      <div class="bubble bubble-profit" id="bubble-profit">רווח כולל: ₪0</div>
+      <div class="bubble bubble-tax" id="bubble-tax">מס 25%: ₪0</div>
+      <div class="bubble bubble-net" id="bubble-net">נטו לאחר מס: ₪0</div>
     </div>
 
     <!-- טבלה -->
