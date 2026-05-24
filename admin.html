@@ -78,6 +78,7 @@
       <h2>קרן השתלמות</h2>
 
       <div class="admin-form">
+        <input id="hishtalmut-name" type="text" placeholder="שם הקרן">
         <input id="hishtalmut-value" type="number" placeholder="שווי נוכחי (₪)">
         <input id="hishtalmut-profit" type="number" placeholder="רווח/הפסד (₪)">
         <button class="admin-btn" onclick="saveHishtalmut()">שמור</button>
@@ -111,22 +112,38 @@
   </div>
 
   <script>
-    const API_URL = "YOUR_APPSCRIPT_URL_HERE";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+
+    async function callApi(payload) {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await res.text();
+      console.log("API response:", text);
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { ok: true };
+      }
+    }
 
     async function saveHishtalmut() {
+      const name = document.getElementById("hishtalmut-name").value;
       const value = document.getElementById("hishtalmut-value").value;
       const profit = document.getElementById("hishtalmut-profit").value;
 
-      await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "update_hishtalmut",
-          value,
-          profit
-        })
+      await callApi({
+        action: "update_hishtalmut",
+        name,
+        value,
+        profit
       });
 
-      alert("עודכן בהצלחה!");
+      alert("קרן השתלמות עודכנה");
     }
 
     async function saveBank() {
@@ -134,17 +151,14 @@
       const type = document.getElementById("bank-type").value;
       const value = document.getElementById("bank-value").value;
 
-      await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "update_bank",
-          bank,
-          type,
-          value
-        })
+      await callApi({
+        action: "update_bank",
+        bank,
+        type,
+        value
       });
 
-      alert("עודכן בהצלחה!");
+      alert("בנק עודכן");
     }
 
     async function saveKid() {
@@ -152,17 +166,14 @@
       const value = document.getElementById("kid-value").value;
       const deposits = document.getElementById("kid-deposits").value;
 
-      await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "update_kid",
-          name,
-          value,
-          deposits
-        })
+      await callApi({
+        action: "update_kid",
+        name,
+        value,
+        deposits
       });
 
-      alert("עודכן בהצלחה!");
+      alert("חיסכון לילד עודכן");
     }
 
     document.getElementById("themeToggle").onclick = () => {
