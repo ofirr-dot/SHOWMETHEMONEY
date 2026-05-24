@@ -2,19 +2,42 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>מס רווחי הון</title>
+  <title>מס רווחי הון – Show Me The Money</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
-  <div class="container">
-    <h1>🧾 מס רווחי הון</h1>
-    <p>חישוב מס על בסיס רווחים ממומשים</p>
+<body class="theme-tax">
 
-    <div class="tax-box">
-      <h2>סיכום מס</h2>
-      <div id="tax-summary" style="font-size:20px; font-weight:bold; margin-top:10px;">
-        טוען נתונים…
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <!-- ניווט -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item active"><span class="icon">🧾</span> מס רווחי הון</a>
+  </nav>
+
+  <div class="page">
+
+    <div class="page-header">
+      <div>
+        <h1>🧾 מס רווחי הון</h1>
+        <div class="page-subtitle" id="tax-timestamp"></div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
+    </div>
+
+    <div class="cards-row">
+      <div class="card" style="padding:20px;">
+        <h3>סיכום מס</h3>
+        <div id="tax-summary" style="font-size:20px; font-weight:bold; margin-top:10px;">
+          טוען נתונים…
+        </div>
       </div>
     </div>
 
@@ -22,9 +45,8 @@
       <table id="tax-table">
         <thead>
           <tr>
-            <th>סימבול</th>
-            <th>תיאור</th>
-            <th>רווח (₪)</th>
+            <th>שם הקרן</th>
+            <th>רווח לא ממומש (₪)</th>
             <th>מס 25% (₪)</th>
           </tr>
         </thead>
@@ -32,56 +54,80 @@
 
         <tfoot>
           <tr id="tax-summary-row">
-            <td colspan="4" style="text-align:center; padding:15px; font-weight:bold;">
+            <td colspan="3" style="text-align:center; padding:15px; font-weight:bold;">
               טוען סיכום…
             </td>
           </tr>
         </tfoot>
       </table>
     </div>
+
   </div>
 
   <script>
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+
+    function format(n) {
+      return Number(n || 0).toLocaleString("he-IL");
+    }
+
     async function loadTax() {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
+      const res = await fetch(API_URL);
       const data = await res.json();
 
-      const rows = data.realized;
+      document.getElementById("tax-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const fair = data.fair || [];
+
       const tbody = document.querySelector("#tax-table tbody");
       const summaryRow = document.getElementById("tax-summary-row");
       const taxSummary = document.getElementById("tax-summary");
 
+      tbody.innerHTML = "";
+
       let totalProfit = 0;
       let totalTax = 0;
 
-      rows.forEach(r => {
-        const tax = r.profitIls * 0.25;
-        totalProfit += r.profitIls;
+      fair.forEach(f => {
+        const profit = Number(f["רווח/הפסד (₪)"] || 0);
+        const tax = profit * 0.25;
+
+        totalProfit += profit;
         totalTax += tax;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${r.symbol}</td>
-          <td>${r.description}</td>
-          <td class="value-positive">${r.profitIls.toLocaleString()}</td>
-          <td class="value-negative">${tax.toLocaleString()}</td>
+          <td>${f["שם הקרן"]}</td>
+          <td class="${profit >= 0 ? 'value-positive' : 'value-negative'}">
+            ₪${format(profit)}
+          </td>
+          <td class="value-negative">₪${format(tax)}</td>
         `;
         tbody.appendChild(tr);
       });
 
       summaryRow.innerHTML = `
-        <td colspan="4" style="text-align:center; padding:15px; font-size:18px;">
-          סה״כ רווח: ₪${totalProfit.toLocaleString()} · מס לתשלום: ₪${totalTax.toLocaleString()}
+        <td colspan="3" style="text-align:center; padding:15px; font-size:18px;">
+          סה״כ רווח לא ממומש: ₪${format(totalProfit)} · מס 25%: ₪${format(totalTax)}
         </td>
       `;
 
       taxSummary.innerHTML = `
-        רווח כולל: <span class="value-positive">₪${totalProfit.toLocaleString()}</span><br>
-        מס 25% לתשלום: <span class="value-negative">₪${totalTax.toLocaleString()}</span>
+        רווח כולל: <span class="value-positive">₪${format(totalProfit)}</span><br>
+        מס 25% לתשלום: <span class="value-negative">₪${format(totalTax)}</span>
       `;
     }
 
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+
     loadTax();
   </script>
+
 </body>
 </html>
