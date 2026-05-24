@@ -186,7 +186,7 @@
 
       rows.forEach(r => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
+        tr.innerinnerHTML = `
           <td>${r.bank}</td>
           <td>${r.type}</td>
           <td>₪${format(r.ils)}</td>
