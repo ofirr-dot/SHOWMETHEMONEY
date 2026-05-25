@@ -4,14 +4,42 @@
   <meta charset="UTF-8">
   <title>קרן השתלמות – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    table th, table td {
+      text-align: center;
+    }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90px;
+    }
+  </style>
 </head>
 
 <body class="theme-hishtalmut">
 
-  <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- סרגל ניווט -->
+  <!-- 🔥 סרגל ניווט חדש בלבד — שום דבר אחר לא השתנה -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
@@ -34,40 +62,39 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <div class="cards-row">
-      <div class="card">
-        <div class="card-title">שווי נוכחי (₪)</div>
-        <div class="card-main" id="hishtalmut-value">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">רווח/הפסד (₪)</div>
-        <div class="card-main" id="hishtalmut-profit">₪0</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">הערות</div>
-        <div class="card-main" id="hishtalmut-notes">—</div>
-      </div>
+    <!-- שלוש בועות ממורכזות -->
+    <div class="bubble-row">
+      <div class="bubble" id="bubble-value">שווי נוכחי: ₪0</div>
+      <div class="bubble" id="bubble-pl">רווח/הפסד: ₪0</div>
+      <div class="bubble" id="bubble-yield">תשואה: 0%</div>
     </div>
 
     <div class="table-wrapper">
-      <h3 style="margin-bottom:10px;">פירוט קרן השתלמות</h3>
+      <h2 style="font-size:16px;margin-bottom:10px;">פרטי הקרן</h2>
 
       <table>
         <thead>
           <tr>
-            <th>שם</th>
-            <th>שווי (₪)</th>
+            <th>שם הקרן</th>
+            <th>שווי נוכחי (₪)</th>
             <th>רווח/הפסד (₪)</th>
-            <th>תאריך</th>
+            <th>תשואה</th>
           </tr>
         </thead>
 
         <tbody id="hishtalmut-table-body">
           <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
+
       </table>
+    </div>
+
+    <!-- גרף עוגה -->
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות</h3>
+        <canvas id="hishtalmut-chart" height="80"></canvas>
+      </div>
     </div>
 
   </div>
@@ -76,39 +103,63 @@
     const API_URL =
       "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function fmt(n) {
-      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
+    function format(n) {
+      return Number(n || 0).toLocaleString("he-IL", {
+        maximumFractionDigits: 2
+      });
     }
 
     async function loadHishtalmut() {
       const res = await fetch(API_URL);
       const data = await res.json();
 
-      const hisht = data.hishtalmut || {};
+      const h = data.hishtalmut || {};
 
       document.getElementById("hishtalmut-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const value = hisht.value || 0;
-      const profit = hisht.profit || 0;
+      const value = Number(h.value || 0);
+      const pl = Number(h.profit || 0);
+      const yieldPct =
+        value > 0 ? (pl / (value - pl)) * 100 : 0;
 
-      document.getElementById("hishtalmut-value").innerText = "₪" + fmt(value);
-      document.getElementById("hishtalmut-profit").innerText =
-        (profit >= 0 ? "+" : "") + "₪" + fmt(profit);
-      document.getElementById("hishtalmut-notes").innerText =
-        hisht.notes || "—";
+      document.getElementById("bubble-value").innerText =
+        "שווי נוכחי: ₪" + format(value);
+
+      document.getElementById("bubble-pl").innerText =
+        "רווח/הפסד: " + (pl >= 0 ? "+" : "") + "₪" + format(pl);
+
+      document.getElementById("bubble-yield").innerText =
+        "תשואה: " + yieldPct.toFixed(2) + "%";
 
       const tbody = document.getElementById("hishtalmut-table-body");
       tbody.innerHTML = `
         <tr>
-          <td>קרן השתלמות</td>
-          <td>₪${fmt(value)}</td>
-          <td class="${profit >= 0 ? 'value-positive' : 'value-negative'}">
-            ${(profit >= 0 ? '+' : '')}₪${fmt(profit)}
+          <td>${h.name || "—"}</td>
+          <td>₪${format(value)}</td>
+          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
+            ${pl >= 0 ? '+' : ''}₪${format(pl)}
           </td>
-          <td>${new Date().toLocaleDateString("he-IL")}</td>
+          <td>${yieldPct.toFixed(2)}%</td>
         </tr>
       `;
+
+      const ctx = document.getElementById("hishtalmut-chart");
+      if (ctx) {
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["שווי נוכחי", "רווח"],
+            datasets: [{
+              data: [value - pl, pl],
+              backgroundColor: ["#6A4FF7", "#0A8A2A"]
+            }]
+          },
+          options: {
+            plugins: { legend: { position: "bottom" } }
+          }
+        });
+      }
     }
 
     document.getElementById("themeToggle").onclick = () => {
