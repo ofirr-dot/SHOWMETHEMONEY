@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>IBKR – פוזיציות פתוחות</title>
   <link rel="stylesheet" href="style.css">
-
   <style>
     table th, table td { text-align: center; }
     .bubble-row { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap:wrap; }
@@ -72,15 +71,10 @@
     </div>
   </div>
 
-  <!-- חשוב: ודא שקובץ config.js נטען לפני הסקריפט הזה -->
-  <script src="config.js"></script>
-
   <script>
-    // אם אין config.js או API_URL לא מוגדר — נציג הודעה ברורה
-    if (typeof API_URL === "undefined") {
-      document.getElementById("ibkr-body").innerHTML = `<tr><td colspan="9">שגיאה: לא נמצא config.js עם API_URL. הוסף קובץ config.js מקומי.</td></tr>`;
-      throw new Error("Missing config.js with API_URL");
-    }
+    // ====== כאן תשים את ה‑API_URL של ה‑Apps Script שלך ======
+    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    // =======================================================
 
     function escapeHtml(s) {
       if (s === null || s === undefined) return "";
@@ -179,7 +173,6 @@
       });
     }
 
-    // קריאה ראשונית
     loadIbkr();
   </script>
 
