@@ -6,40 +6,19 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    table th, table td {
-      text-align: center;
-    }
-
-    .bubble-row {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .bubble {
-      flex: 1;
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 90px;
-    }
+    table th, table td { text-align: center; }
+    .bubble-row { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap:wrap; }
+    .bubble { flex: 1; background: var(--card-bg); padding: 18px; border-radius: 12px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.12); min-height: 80px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+    .value-positive { color:#0a8a2a; }
+    .value-negative { color:#e84e89; }
+    #themeToggle { position: fixed; left: 12px; top: 12px; z-index: 9999; width:44px; height:44px; border-radius:10px; }
   </style>
 </head>
 
 <body class="theme-overview">
 
-  <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- 🔥 סרגל ניווט חדש בלבד — שום דבר אחר לא השתנה -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
@@ -53,16 +32,14 @@
   </nav>
 
   <div class="page">
-
     <div class="page-header">
       <div>
         <h1>📈 פוזיציות פתוחות – IBKR</h1>
-        <div class="page-subtitle">נתונים חיים מה‑IBKR FLEX API</div>
+        <div class="page-subtitle">נתונים חיים מה‑API המרכזי</div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- בועות ממורכזות -->
     <div class="bubble-row">
       <div class="bubble" id="bubble-total-usd">סה״כ שווי ($): 0</div>
       <div class="bubble" id="bubble-total-ils">סה״כ שווי (₪): 0</div>
@@ -85,96 +62,124 @@
             <th>רווח (₪)</th>
           </tr>
         </thead>
-
         <tbody id="ibkr-body"></tbody>
-
         <tfoot>
           <tr id="ibkr-summary">
-            <td colspan="9" style="text-align:center; padding:15px;">
-              טוען נתונים…
-            </td>
+            <td colspan="9" style="text-align:center; padding:15px;">טוען נתונים…</td>
           </tr>
         </tfoot>
       </table>
     </div>
-
   </div>
 
+  <!-- חשוב: ודא שקובץ config.js נטען לפני הסקריפט הזה -->
+  <script src="config.js"></script>
+
   <script>
-    const API_URL = "YOUR_APPSCRIPT_URL_HERE";
+    // אם אין config.js או API_URL לא מוגדר — נציג הודעה ברורה
+    if (typeof API_URL === "undefined") {
+      document.getElementById("ibkr-body").innerHTML = `<tr><td colspan="9">שגיאה: לא נמצא config.js עם API_URL. הוסף קובץ config.js מקומי.</td></tr>`;
+      throw new Error("Missing config.js with API_URL");
+    }
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return "";
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    }
 
     async function loadIbkr() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-
-      const usdRate = data.ibkr.summary.usdRate;
-      const rows = data.ibkr.positions;
-
       const tbody = document.getElementById("ibkr-body");
       const summary = document.getElementById("ibkr-summary");
 
-      tbody.innerHTML = "";
+      tbody.innerHTML = `<tr><td colspan="9">טוען נתונים…</td></tr>`;
+      summary.innerHTML = `<td colspan="9" style="text-align:center; padding:15px;">טוען נתונים…</td>`;
 
-      let totalUsd = 0;
-      let totalIls = 0;
-      let totalPlUsd = 0;
-      let totalPlIls = 0;
+      try {
+        const res = await fetch(API_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
 
-      rows.forEach(p => {
-        const plUsd = p.unrealizedPlUsd;
-        const plIls = p.unrealizedPlIls;
+        const ibkr = data && data.ibkr ? data.ibkr : null;
+        if (!ibkr || !Array.isArray(ibkr.positions) || ibkr.positions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9">אין נתוני IBKR להצגה</td></tr>`;
+          summary.innerHTML = `<td colspan="9" style="text-align:center; padding:15px;">אין נתוני IBKR</td>`;
+          document.getElementById("bubble-total-usd").innerText = "סה״כ שווי ($): 0";
+          document.getElementById("bubble-total-ils").innerText = "סה״כ שווי (₪): 0";
+          document.getElementById("bubble-total-pl-usd").innerText = "סה״כ רווח ($): 0";
+          document.getElementById("bubble-total-pl-ils").innerText = "סה״כ רווח (₪): 0";
+          return;
+        }
 
-        totalUsd += p.marketValueUsd;
-        totalIls += p.marketValueIls;
-        totalPlUsd += plUsd;
-        totalPlIls += plIls;
+        const rows = ibkr.positions;
+        tbody.innerHTML = "";
 
-        const plClassUsd = plUsd >= 0 ? "value-positive" : "value-negative";
-        const plClassIls = plIls >= 0 ? "value-positive" : "value-negative";
+        let totalUsd = 0, totalIls = 0, totalPlUsd = 0, totalPlIls = 0;
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${p.symbol}</td>
-          <td>${p.description}</td>
-          <td>${p.quantity}</td>
-          <td>${p.costBasis.toLocaleString()}</td>
-          <td>${p.marketPrice.toLocaleString()}</td>
-          <td>${p.marketValueUsd.toLocaleString()}</td>
-          <td class="${plClassUsd}">${plUsd.toLocaleString()}</td>
-          <td>${p.marketValueIls.toLocaleString()}</td>
-          <td class="${plClassIls}">${plIls.toLocaleString()}</td>
+        rows.forEach(p => {
+          const symbol = p.symbol || "—";
+          const desc = p.description || "—";
+          const qty = Number(p.quantity || 0);
+          const costBasis = Number(p.costBasis || 0);
+          const marketPrice = Number(p.marketPrice || 0);
+          const marketValueUsd = Number(p.marketValueUsd || (marketPrice * qty) || 0);
+          const marketValueIls = Number(p.marketValueIls || (marketValueUsd * (data.usdRate || (ibkr.summary && ibkr.summary.usdRate) || 1)) || 0);
+          const plUsd = Number(p.unrealizedPlUsd || 0);
+          const plIls = Number(p.unrealizedPlIls || 0);
+
+          totalUsd += marketValueUsd;
+          totalIls += marketValueIls;
+          totalPlUsd += plUsd;
+          totalPlIls += plIls;
+
+          const plClassUsd = plUsd >= 0 ? "value-positive" : "value-negative";
+          const plClassIls = plIls >= 0 ? "value-positive" : "value-negative";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(symbol)}</td>
+            <td>${escapeHtml(desc)}</td>
+            <td>${qty.toLocaleString()}</td>
+            <td>${costBasis.toLocaleString()}</td>
+            <td>${marketPrice.toLocaleString()}</td>
+            <td>${marketValueUsd.toLocaleString()}</td>
+            <td class="${plClassUsd}">${plUsd.toLocaleString()}</td>
+            <td>${marketValueIls.toLocaleString()}</td>
+            <td class="${plClassIls}">${plIls.toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        summary.innerHTML = `
+          <td colspan="9" style="text-align:center; font-size:18px;">
+            סה״כ שווי ($): ${totalUsd.toLocaleString()} ·
+            סה״כ שווי (₪): ${totalIls.toLocaleString()} ·
+            סה״כ רווח ($): ${totalPlUsd.toLocaleString()} ·
+            סה״כ רווח (₪): ${totalPlIls.toLocaleString()}
+          </td>
         `;
-        tbody.appendChild(tr);
-      });
 
-      summary.innerHTML = `
-        <td colspan="9" style="text-align:center; font-size:18px;">
-          סה״כ שווי ($): ${totalUsd.toLocaleString()} ·
-          סה״כ שווי (₪): ${totalIls.toLocaleString()} ·
-          סה״כ רווח ($): ${totalPlUsd.toLocaleString()} ·
-          סה״כ רווח (₪): ${totalPlIls.toLocaleString()}
-        </td>
-      `;
+        document.getElementById("bubble-total-usd").innerText = "סה״כ שווי ($): " + totalUsd.toLocaleString();
+        document.getElementById("bubble-total-ils").innerText = "סה״כ שווי (₪): " + totalIls.toLocaleString();
+        document.getElementById("bubble-total-pl-usd").innerText = "סה״כ רווח ($): " + totalPlUsd.toLocaleString();
+        document.getElementById("bubble-total-pl-ils").innerText = "סה״כ רווח (₪): " + totalPlIls.toLocaleString();
 
-      document.getElementById("bubble-total-usd").innerText =
-        "סה״כ שווי ($): " + totalUsd.toLocaleString();
-
-      document.getElementById("bubble-total-ils").innerText =
-        "סה״כ שווי (₪): " + totalIls.toLocaleString();
-
-      document.getElementById("bubble-total-pl-usd").innerText =
-        "סה״כ רווח ($): " + totalPlUsd.toLocaleString();
-
-      document.getElementById("bubble-total-pl-ils").innerText =
-        "סה״כ רווח (₪): " + totalPlIls.toLocaleString();
+      } catch (err) {
+        console.error("loadIbkr error:", err);
+        tbody.innerHTML = `<tr><td colspan="9">שגיאה בטעינת נתוני IBKR. בדוק את ה‑Console.</td></tr>`;
+        summary.innerHTML = `<td colspan="9" style="text-align:center; padding:15px;">שגיאה בטעינת נתונים</td>`;
+      }
     }
 
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
+    // כפתור אור/לילה
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      });
+    }
 
+    // קריאה ראשונית
     loadIbkr();
   </script>
 
