@@ -1,167 +1,142 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <title>FAIR – Show Me The Money</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-  <script src="/loadHeader.js" defer></script>
-
-  <style>
-    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
-    .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-    .cards-row { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:18px; }
-    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-    .table-wrapper { background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; margin-top:8px; }
-    th, td { padding:10px; text-align:center; border-bottom:1px solid #eee; }
-    .theme-btn { position:fixed; left:12px; top:12px; z-index:9999; width:44px; height:44px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
 
-  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
+<body class="theme-fair">
 
-  <div id="site-header"></div>
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <!-- סרגל ניווט -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item active"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
+  </nav>
 
   <div class="page">
+
     <div class="page-header">
       <div>
         <h1>FAIR</h1>
-        <div class="small" id="fair-timestamp">טוען...</div>
+        <div class="page-subtitle" id="fair-timestamp"></div>
       </div>
-      <div class="small">Ofir</div>
+      <div class="page-subtitle">Ofir</div>
     </div>
 
-    <div class="cards-row" id="fair-cards">
+    <div class="cards-row">
       <div class="card">
-        <div class="card-title">סה"כ שווי קרנות</div>
+        <div class="card-title">שווי כולל (₪)</div>
         <div class="card-main" id="fair-total">₪0</div>
-        <div class="card-sub small">עדכון אחרון: <span id="fair-last-update">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">רווח/הפסד (₪)</div>
+        <div class="card-main" id="fair-profit">₪0</div>
       </div>
 
       <div class="card">
         <div class="card-title">מספר קרנות</div>
         <div class="card-main" id="fair-count">0</div>
-        <div class="card-sub small">פרטים בטבלה</div>
       </div>
     </div>
 
     <div class="table-wrapper">
-      <h3 style="margin:0 0 8px 0">קרנות FAIR</h3>
-      <table id="fair-table">
+      <h3 style="margin-bottom:10px;">רשימת קרנות FAIR</h3>
+      <table>
         <thead>
           <tr>
             <th>שם הקרן</th>
             <th>שווי נוכחי (₪)</th>
             <th>רווח/הפסד (₪)</th>
-            <th>הערות</th>
           </tr>
         </thead>
-        <tbody>
-          <tr><td colspan="4">טוען נתונים…</td></tr>
+        <tbody id="fair-table-body">
+          <tr><td colspan="3">טוען נתונים…</td></tr>
         </tbody>
       </table>
     </div>
 
-    <div style="height:18px"></div>
-
-    <div class="card" style="max-width:720px;margin:0 auto;">
-      <h3 style="text-align:center;margin-bottom:10px">התפלגות שווי לפי קרן</h3>
-      <div style="height:320px; position:relative;">
-        <canvas id="fair-chart"></canvas>
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; text-align:center;">התפלגות לפי קרן</h3>
+        <canvas id="fair-chart" height="80"></canvas>
       </div>
     </div>
+
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
-    function safeNum(v){ if(v===null||v===undefined||v==="") return 0; const n=Number(String(v).replace(/\u00A0/g,"").replace(/,/g,"")); return isNaN(n)?0:n; }
-    function fmt(n){ return Number(n||0).toLocaleString("he-IL",{maximumFractionDigits:2}); }
-    let fairChart = null;
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    async function loadFair() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-
-        const fairList = Array.isArray(data.fair) ? data.fair : [];
-        const total = fairList.reduce((s,f)=> s + safeNum(f["שווי נוכחי (₪)"] || f["שווי נוכחי"] || f["שווי נוכחי (ILS)"] || f["שווי"] || f["value"] || 0), 0);
-
-        document.getElementById("fair-total").innerText = "₪" + fmt(total);
-        document.getElementById("fair-count").innerText = fairList.length;
-        document.getElementById("fair-last-update").innerText = new Date().toLocaleString("he-IL");
-        document.getElementById("fair-timestamp").innerText = new Date().toLocaleString("he-IL");
-
-        // טבלה
-        const tbody = document.querySelector("#fair-table tbody");
-        tbody.innerHTML = "";
-        if (fairList.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4">אין נתונים להצגה</td></tr>`;
-        } else {
-          fairList.forEach(f => {
-            const name = f["שם הקרן"] || f.name || f["שם"] || "—";
-            const value = safeNum(f["שווי נוכחי (₪)"] || f["שווי נוכחי"] || f.value || 0);
-            const profit = safeNum(f["רווח/הפסד (₪)"] || f["רווח/הפסד"] || f.profit || 0);
-            const notes = f["הערות"] || f.notes || "";
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${escapeHtml(name)}</td>
-              <td>₪${fmt(value)}</td>
-              <td class="${profit>=0?'value-positive':'value-negative'}">${profit>=0?'+':''}₪${fmt(profit)}</td>
-              <td>${escapeHtml(notes)}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-
-        // גרף
-        const ctx = document.getElementById("fair-chart");
-        if (fairChart) { try { fairChart.destroy(); } catch(e){} fairChart = null; }
-
-        const labels = fairList.map(f => f["שם הקרן"] || f.name || "—");
-        const values = fairList.map(f => safeNum(f["שווי נוכחי (₪)"] || f["שווי נוכחי"] || f.value || 0));
-
-        // חיתוך ל‑top N
-        const MAX = 12;
-        let labelsOut = labels.slice(), valuesOut = values.slice();
-        if (labelsOut.length > MAX) {
-          const pairs = labelsOut.map((lab,i)=>({lab,val:valuesOut[i]})).sort((a,b)=>b.val-a.val);
-          const top = pairs.slice(0,MAX-1);
-          const others = pairs.slice(MAX-1);
-          labelsOut = top.map(x=>x.lab);
-          valuesOut = top.map(x=>x.val);
-          valuesOut.push(others.reduce((s,x)=>s+x.val,0));
-          labelsOut.push("אחרים");
-        }
-
-        fairChart = new Chart(ctx, {
-          type: 'pie',
-          data: { labels: labelsOut, datasets: [{ data: valuesOut, backgroundColor: ['#6A4FF7','#0A8A2A','#00A8A8','#FF8A3D','#E84E89','#4A90E2','#F5A623','#7ED321','#9B59B6','#2ECC71','#E67E22','#3498DB'] }] },
-          options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
-        });
-
-      } catch (err) {
-        console.error("loadFair error:", err);
-        document.querySelector("#fair-table tbody").innerHTML = `<tr><td colspan="4">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
-      }
+    function fmt(n) {
+      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
     }
 
-    // כפתור אור/לילה
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    async function loadFair() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const fair = data.fair || [];
+
+      document.getElementById("fair-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const total = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0);
+      const profit = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || 0), 0);
+
+      document.getElementById("fair-total").innerText = "₪" + fmt(total);
+      document.getElementById("fair-profit").innerText =
+        (profit >= 0 ? "+" : "") + "₪" + fmt(profit);
+      document.getElementById("fair-count").innerText = fair.length;
+
+      const tbody = document.getElementById("fair-table-body");
+      tbody.innerHTML = "";
+
+      fair.forEach(f => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${f["שם הקרן"]}</td>
+          <td>₪${fmt(f["שווי נוכחי (₪)"])}</td>
+          <td class="${f["רווח/הפסד (₪)"] >= 0 ? 'value-positive' : 'value-negative'}">
+            ${(f["רווח/הפסד (₪)"] >= 0 ? '+' : '')}₪${fmt(f["רווח/הפסד (₪)"])}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      new Chart(document.getElementById("fair-chart"), {
+        type: "pie",
+        data: {
+          labels: fair.map(f => f["שם הקרן"]),
+          datasets: [{
+            data: fair.map(f => f["שווי נוכחי (₪)"]),
+            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
+          }]
+        }
       });
     }
 
-    function escapeHtml(s){ if(s===null||s===undefined) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
 
-    document.addEventListener("DOMContentLoaded", () => {
-      loadFair();
-    });
+    loadFair();
   </script>
+
 </body>
 </html>
