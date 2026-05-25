@@ -1,188 +1,149 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <title>IBKR – Show Me The Money</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-  <script src="/loadHeader.js" defer></script>
-
-  <style>
-    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
-    .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-    .cards-row { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:18px; }
-    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-    .small { font-size:13px; color:#666; }
-    .chart-wrap { max-width:720px; margin:12px auto; }
-    .table-wrapper { background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; margin-top:8px; }
-    th, td { padding:10px; text-align:center; border-bottom:1px solid #eee; }
-    .theme-btn { position:fixed; left:12px; top:12px; z-index:9999; width:44px; height:44px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
 
-  <!-- כפתור אור/לילה מקומי (header.html לא מכיל אותו) -->
-  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
+<body class="theme-ibkr">
 
-  <!-- כאן ייטען הסרגל הדינמי -->
-  <div id="site-header"></div>
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <!-- סרגל ניווט -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item active"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
+  </nav>
 
   <div class="page">
+
     <div class="page-header">
       <div>
         <h1>IBKR</h1>
-        <div class="small" id="ibkr-timestamp">טוען...</div>
+        <div class="page-subtitle" id="ibkr-timestamp"></div>
       </div>
-      <div class="small">Ofir</div>
+      <div class="page-subtitle">Ofir</div>
     </div>
 
-    <div class="cards-row" id="ibkr-cards">
+    <div class="cards-row">
       <div class="card">
-        <div class="card-title">סה"כ שווי (ILS)</div>
+        <div class="card-title">שווי כולל (₪)</div>
         <div class="card-main" id="ibkr-total-ils">₪0</div>
-        <div class="card-sub small">עדכון אחרון: <span id="ibkr-last-update">—</span></div>
       </div>
 
       <div class="card">
-        <div class="card-title">סה"כ רווח/הפסד (ILS)</div>
+        <div class="card-title">רווח/הפסד (₪)</div>
         <div class="card-main" id="ibkr-total-pl">₪0</div>
-        <div class="card-sub small">מפורט למטה</div>
       </div>
 
       <div class="card">
         <div class="card-title">מספר פוזיציות</div>
         <div class="card-main" id="ibkr-count">0</div>
-        <div class="card-sub small">מניות / אופציות / אג"ח</div>
       </div>
     </div>
-
-    <div class="chart-wrap">
-      <div class="card">
-        <h3 style="margin:0 0 10px 0; text-align:center;">התפלגות לפי נכס (ILS)</h3>
-        <div style="height:320px; position:relative;">
-          <canvas id="ibkr-chart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div style="height:12px"></div>
 
     <div class="table-wrapper">
-      <h3 style="margin:0 0 8px 0">פוזיציות פתוחות</h3>
-      <table id="ibkr-table">
+      <h3 style="margin-bottom:10px;">פוזיציות פתוחות</h3>
+      <table>
         <thead>
           <tr>
             <th>סימול</th>
             <th>תיאור</th>
             <th>כמות</th>
-            <th>מחיר שוק</th>
-            <th>שווי (ILS)</th>
-            <th>רווח/הפסד (ILS)</th>
+            <th>מחיר</th>
+            <th>שווי (₪)</th>
+            <th>רווח/הפסד</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="ibkr-table-body">
           <tr><td colspan="6">טוען נתונים…</td></tr>
         </tbody>
       </table>
     </div>
+
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; text-align:center;">התפלגות לפי נכס</h3>
+        <canvas id="ibkr-chart" height="80"></canvas>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function safeNum(v){ if(v===null||v===undefined||v==="") return 0; const n=Number(String(v).replace(/\u00A0/g,"").replace(/,/g,"")); return isNaN(n)?0:n; }
-    function fmt(n){ return Number(n||0).toLocaleString("he-IL",{maximumFractionDigits:2}); }
-    let ibkrChart = null;
-
-    async function loadIbkr() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-
-        const positions = Array.isArray(data.ibkr?.positions) ? data.ibkr.positions : [];
-        const summary = data.ibkr?.summary || {};
-        const usdRate = safeNum(data.usdRate || summary.usdRate || data.ibkr?.summary?.usdRate);
-
-        const totalIls = positions.reduce((s,p)=> s + safeNum(p.marketValueIls || p.marketValue || 0), 0);
-        const totalPl = positions.reduce((s,p)=> s + safeNum(p.unrealizedPlIls || p.unrealizedPl || 0), 0);
-
-        document.getElementById("ibkr-total-ils").innerText = "₪" + fmt(totalIls);
-        document.getElementById("ibkr-total-pl").innerText = (totalPl>=0?"+":"") + "₪" + fmt(totalPl);
-        document.getElementById("ibkr-count").innerText = positions.length;
-        document.getElementById("ibkr-last-update").innerText = new Date().toLocaleString("he-IL");
-        document.getElementById("ibkr-timestamp").innerText = new Date().toLocaleString("he-IL");
-
-        // טבלה
-        const tbody = document.querySelector("#ibkr-table tbody");
-        tbody.innerHTML = "";
-        if (positions.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">אין פוזיציות להצגה</td></tr>`;
-        } else {
-          positions.forEach(p => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${escapeHtml(p.symbol || p.symbol)}</td>
-              <td>${escapeHtml(p.description || "")}</td>
-              <td>${fmt(p.quantity || p.qty || 0)}</td>
-              <td>${fmt(p.marketPrice || p.marketPriceUsd || 0)}</td>
-              <td>₪${fmt(p.marketValueIls || p.marketValue || 0)}</td>
-              <td class="${(safeNum(p.unrealizedPlIls||p.unrealizedPl||0) >= 0) ? 'value-positive' : 'value-negative'}">
-                ${(safeNum(p.unrealizedPlIls||p.unrealizedPl||0) >= 0 ? '+' : '')}₪${fmt(safeNum(p.unrealizedPlIls||p.unrealizedPl||0))}
-              </td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-
-        // גרף — התפלגות לפי שווי
-        const ctx = document.getElementById("ibkr-chart");
-        if (ibkrChart) { try { ibkrChart.destroy(); } catch(e){} ibkrChart = null; }
-
-        const labels = positions.map(p => p.symbol || p.description || "—");
-        const values = positions.map(p => safeNum(p.marketValueIls || p.marketValue || 0));
-
-        // חיתוך ל‑top N
-        const MAX = 12;
-        let labelsOut = labels.slice(), valuesOut = values.slice();
-        if (labelsOut.length > MAX) {
-          const pairs = labelsOut.map((lab,i)=>({lab,val:valuesOut[i]})).sort((a,b)=>b.val-a.val);
-          const top = pairs.slice(0,MAX-1);
-          const others = pairs.slice(MAX-1);
-          labelsOut = top.map(x=>x.lab);
-          valuesOut = top.map(x=>x.val);
-          valuesOut.push(others.reduce((s,x)=>s+x.val,0));
-          labelsOut.push("אחרים");
-        }
-
-        ibkrChart = new Chart(ctx, {
-          type: 'pie',
-          data: { labels: labelsOut, datasets: [{ data: valuesOut, backgroundColor: ['#6A4FF7','#0A8A2A','#00A8A8','#FF8A3D','#E84E89','#4A90E2','#F5A623','#7ED321','#9B59B6','#2ECC71','#E67E22','#3498DB'] }] },
-          options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
-        });
-
-      } catch (err) {
-        console.error("loadIbkr error:", err);
-        document.querySelector("#ibkr-table tbody").innerHTML = `<tr><td colspan="6">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
-      }
+    function fmt(n) {
+      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
     }
 
-    // כפתור אור/לילה
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    async function loadIbkr() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const positions = data.ibkr?.positions || [];
+      const summary = data.ibkr?.summary || {};
+
+      document.getElementById("ibkr-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const totalValue = summary.totalValueIls || 0;
+      const totalProfit = summary.totalProfitIls || 0;
+
+      document.getElementById("ibkr-total-ils").innerText = "₪" + fmt(totalValue);
+      document.getElementById("ibkr-total-pl").innerText =
+        (totalProfit >= 0 ? "+" : "") + "₪" + fmt(totalProfit);
+      document.getElementById("ibkr-count").innerText = positions.length;
+
+      const tbody = document.getElementById("ibkr-table-body");
+      tbody.innerHTML = "";
+
+      positions.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.symbol}</td>
+          <td>${p.description}</td>
+          <td>${fmt(p.quantity)}</td>
+          <td>${fmt(p.marketPrice)}</td>
+          <td>₪${fmt(p.marketValueIls)}</td>
+          <td class="${p.unrealizedPlIls >= 0 ? 'value-positive' : 'value-negative'}">
+            ${(p.unrealizedPlIls >= 0 ? '+' : '')}₪${fmt(p.unrealizedPlIls)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      new Chart(document.getElementById("ibkr-chart"), {
+        type: "pie",
+        data: {
+          labels: positions.map(p => p.symbol),
+          datasets: [{
+            data: positions.map(p => p.marketValueIls),
+            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
+          }]
+        }
       });
     }
 
-    function escapeHtml(s){ if(s===null||s===undefined) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
 
-    // התחלה
-    document.addEventListener("DOMContentLoaded", () => {
-      loadIbkr();
-    });
+    loadIbkr();
   </script>
+
 </body>
 </html>
