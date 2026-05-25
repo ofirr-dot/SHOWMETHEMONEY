@@ -9,20 +9,16 @@
 
 <body class="theme-fair">
 
-  <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- סרגל ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item active"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
     <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
-    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
   </nav>
 
   <div class="page">
@@ -35,42 +31,51 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
+    <!-- כרטיסים -->
     <div class="cards-row">
+
       <div class="card">
-        <div class="card-title">שווי כולל (₪)</div>
-        <div class="card-main" id="fair-total">₪0</div>
+        <div class="card-title">שווי כולל</div>
+        <div class="card-main" id="fair-total-value">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">רווח/הפסד (₪)</div>
-        <div class="card-main" id="fair-profit">₪0</div>
+        <div class="card-title">רווח כולל</div>
+        <div class="card-main card-positive" id="fair-total-pl">₪0</div>
       </div>
 
       <div class="card">
-        <div class="card-title">מספר קרנות</div>
-        <div class="card-main" id="fair-count">0</div>
+        <div class="card-title">תשואה</div>
+        <div class="card-main" id="fair-total-yield">0%</div>
       </div>
+
     </div>
 
+    <!-- טבלה -->
     <div class="table-wrapper">
-      <h3 style="margin-bottom:10px;">רשימת קרנות FAIR</h3>
+      <h2 style="font-size:16px;margin-bottom:10px;">רשימת קרנות FAIR</h2>
+
       <table>
         <thead>
           <tr>
             <th>שם הקרן</th>
             <th>שווי נוכחי (₪)</th>
             <th>רווח/הפסד (₪)</th>
+            <th>תשואה</th>
           </tr>
         </thead>
+
         <tbody id="fair-table-body">
-          <tr><td colspan="3">טוען נתונים…</td></tr>
+          <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
+
       </table>
     </div>
 
+    <!-- גרף עוגה קטן בתחתית -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; text-align:center;">התפלגות לפי קרן</h3>
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי קרן</h3>
         <canvas id="fair-chart" height="80"></canvas>
       </div>
     </div>
@@ -81,11 +86,13 @@
     const API_URL =
       "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function fmt(n) {
-      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
+    function format(n) {
+      return Number(n || 0).toLocaleString("he-IL", {
+        maximumFractionDigits: 2
+      });
     }
 
-    async function loadFair() {
+    async function loadFAIR() {
       const res = await fetch(API_URL);
       const data = await res.json();
 
@@ -94,39 +101,68 @@
       document.getElementById("fair-timestamp").innerText =
         new Date().toLocaleString("he-IL");
 
-      const total = fair.reduce((s, r) => s + Number(r["שווי נוכחי (₪)"] || 0), 0);
-      const profit = fair.reduce((s, r) => s + Number(r["רווח/הפסד (₪)"] || 0), 0);
+      const totalValue = fair.reduce(
+        (s, r) => s + Number(r["שווי נוכחי (₪)"] || r.valueIls || 0),
+        0
+      );
 
-      document.getElementById("fair-total").innerText = "₪" + fmt(total);
-      document.getElementById("fair-profit").innerText =
-        (profit >= 0 ? "+" : "") + "₪" + fmt(profit);
-      document.getElementById("fair-count").innerText = fair.length;
+      const totalProfit = fair.reduce(
+        (s, r) => s + Number(r["רווח/הפסד (₪)"] || r.plIls || 0),
+        0
+      );
+
+      const totalYield =
+        totalValue > 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
+
+      document.getElementById("fair-total-value").innerText =
+        "₪" + format(totalValue);
+
+      document.getElementById("fair-total-pl").innerText =
+        (totalProfit >= 0 ? "+" : "") + "₪" + format(totalProfit);
+
+      document.getElementById("fair-total-yield").innerText =
+        totalYield.toFixed(2) + "%";
 
       const tbody = document.getElementById("fair-table-body");
       tbody.innerHTML = "";
 
       fair.forEach(f => {
+        const value = Number(f["שווי נוכחי (₪)"] || f.valueIls || 0);
+        const pl = Number(f["רווח/הפסד (₪)"] || f.plIls || 0);
+        const yieldPct =
+          value > 0 ? ((pl / (value - pl)) * 100).toFixed(2) : "0.00";
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${f["שם הקרן"]}</td>
-          <td>₪${fmt(f["שווי נוכחי (₪)"])}</td>
-          <td class="${f["רווח/הפסד (₪)"] >= 0 ? 'value-positive' : 'value-negative'}">
-            ${(f["רווח/הפסד (₪)"] >= 0 ? '+' : '')}₪${fmt(f["רווח/הפסד (₪)"])}
+          <td>₪${format(value)}</td>
+          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
+            ${pl >= 0 ? '+' : ''}₪${format(pl)}
           </td>
+          <td>${yieldPct}%</td>
         `;
         tbody.appendChild(tr);
       });
 
-      new Chart(document.getElementById("fair-chart"), {
-        type: "pie",
-        data: {
-          labels: fair.map(f => f["שם הקרן"]),
-          datasets: [{
-            data: fair.map(f => f["שווי נוכחי (₪)"]),
-            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
-          }]
-        }
-      });
+      const ctx = document.getElementById("fair-chart");
+      if (ctx) {
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: fair.map(f => f["שם הקרן"]),
+            datasets: [{
+              data: fair.map(f => Number(f["שווי נוכחי (₪)"])),
+              backgroundColor: [
+                "#6A4FF7", "#0A8A2A", "#00A8A8",
+                "#FF8A3D", "#E84E89", "#4A90E2"
+              ]
+            }]
+          },
+          options: {
+            plugins: { legend: { position: "bottom" } }
+          }
+        });
+      }
     }
 
     document.getElementById("themeToggle").onclick = () => {
@@ -135,7 +171,7 @@
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    loadFair();
+    loadFAIR();
   </script>
 
 </body>
