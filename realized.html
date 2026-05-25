@@ -1,187 +1,103 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8">
   <title>רווח ממומש – Show Me The Money</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/loadHeader.js" defer></script>
+
+  <style>
+    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
+    .table-wrapper { background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    th, td { padding:10px; text-align:center; border-bottom:1px solid #eee; }
+    .theme-btn { position:fixed; left:12px; top:12px; z-index:9999; width:44px; height:44px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; }
+  </style>
 </head>
+<body>
 
-<body class="theme-realized">
+  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
 
-  <!-- מצב כהה/בהיר -->
-  <button id="themeToggle" class="theme-btn">🌙</button>
-
-  <!-- ניווט -->
-  <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="realized.html" class="nav-item active"><span class="icon">💰</span> רווח ממומש</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
-  </nav>
+  <div id="site-header"></div>
 
   <div class="page">
-
-    <div class="page-header">
-      <div>
-        <h1>💰 רווח ממומש</h1>
-        <div class="page-subtitle">כל המכירות שבוצעו + רווחים בדולר ובשקל</div>
-      </div>
-      <div class="page-subtitle">Ofir</div>
+    <div class="page-header" style="margin-bottom:12px;">
+      <h1>רווח ממומש</h1>
+      <div class="small">רשימת עסקאות מכירה ורווחים</div>
     </div>
 
-    <div class="realized-table-wrapper">
+    <div class="table-wrapper">
       <table id="realized-table">
         <thead>
           <tr>
-            <th data-col="symbol" class="sortable">סימבול ⬍</th>
-            <th data-col="description" class="sortable">תיאור ⬍</th>
-            <th data-col="saleDate" class="sortable">תאריך מכירה ⬍</th>
-            <th data-col="costUsd" class="sortable">עלות קנייה ($) ⬍</th>
-            <th data-col="proceedsUsd" class="sortable">תמורה ($) ⬍</th>
-            <th data-col="profitUsd" class="sortable">רווח ($) ⬍</th>
-            <th data-col="fxRate" class="sortable">שער ⬍</th>
-            <th data-col="profitIls" class="sortable">רווח (₪) ⬍</th>
+            <th>תאריך</th>
+            <th>סימול</th>
+            <th>תיאור</th>
+            <th>עלות (₪)</th>
+            <th>מכירה (₪)</th>
+            <th>רווח (₪)</th>
           </tr>
         </thead>
-
-        <tbody></tbody>
-
-        <tfoot>
-          <tr id="realized-summary-row">
-            <td colspan="8" style="text-align:center; font-weight:bold; padding:15px;">
-              טוען סיכום…
-            </td>
-          </tr>
-        </tfoot>
+        <tbody>
+          <tr><td colspan="6">טוען נתונים…</td></tr>
+        </tbody>
       </table>
     </div>
-
   </div>
 
   <script>
-    let rows = [];
-    let sortState = {};
+    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function toNum(v) {
-      return Number(v || 0);
-    }
+    function safeNum(v){ if(v===null||v===undefined||v==="") return 0; const n=Number(String(v).replace(/\u00A0/g,"").replace(/,/g,"")); return isNaN(n)?0:n; }
+    function fmt(n){ return Number(n||0).toLocaleString("he-IL",{maximumFractionDigits:2}); }
 
-    function parseDate(d) {
-      const parts = d.split("/");
-      return new Date(parts[2], parts[1] - 1, parts[0]);
-    }
+    async function loadRealized() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
 
-    async function loadData() {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec");
-      const data = await res.json();
+        const list = Array.isArray(data.realized) ? data.realized : [];
+        const tbody = document.querySelector("#realized-table tbody");
+        tbody.innerHTML = "";
 
-      rows = (data.realized || [])
-        .filter(r => r.symbol && !String(r.year || "").startsWith("💡"))
-        .map(r => ({
-          symbol: r.symbol,
-          description: r.description,
-          saleDate: r.saleDate,
-          costUsd: toNum(r.costUsd),
-          proceedsUsd: toNum(r.proceedsUsd),
-          profitUsd: toNum(r.profitUsd),
-          fxRate: toNum(r.fxRate),
-          profitIls: toNum(r.profitIls)
-        }));
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6">אין נתונים להצגה</td></tr>`;
+          return;
+        }
 
-      renderTable();
-      enableSorting();
-    }
-
-    function renderTable() {
-      const tbody = document.querySelector("#realized-table tbody");
-      const summaryRow = document.getElementById("realized-summary-row");
-
-      tbody.innerHTML = "";
-
-      let totalCost = 0;
-      let totalProceeds = 0;
-      let totalProfitUsd = 0;
-      let totalProfitIls = 0;
-
-      rows.forEach(r => {
-        const profitClass = r.profitUsd >= 0 ? "value-positive" : "value-negative";
-
-        totalCost += r.costUsd;
-        totalProceeds += r.proceedsUsd;
-        totalProfitUsd += r.profitUsd;
-        totalProfitIls += r.profitIls;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.symbol}</td>
-          <td>${r.description}</td>
-          <td>${r.saleDate}</td>
-          <td>${r.costUsd.toLocaleString()}</td>
-          <td>${r.proceedsUsd.toLocaleString()}</td>
-          <td class="${profitClass}">${r.profitUsd.toLocaleString()}</td>
-          <td>${r.fxRate}</td>
-          <td class="${profitClass}">${r.profitIls.toLocaleString()}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      summaryRow.innerHTML = `
-        <td colspan="8" style="text-align:center; font-size:18px; padding:15px;">
-          סה״כ עלות: $${totalCost.toLocaleString()} ·
-          סה״כ תמורה: $${totalProceeds.toLocaleString()} ·
-          סה״כ רווח: $${totalProfitUsd.toLocaleString()} ·
-          סה״כ רווח (₪): ₪${totalProfitIls.toLocaleString()}
-        </td>
-      `;
-    }
-
-    function enableSorting() {
-      document.querySelectorAll(".sortable").forEach(th => {
-        th.addEventListener("click", () => {
-          const col = th.dataset.col;
-
-          sortState[col] = !sortState[col];
-
-          rows.sort((a, b) => {
-            let A = a[col];
-            let B = b[col];
-
-            if (col === "saleDate") {
-              A = parseDate(A);
-              B = parseDate(B);
-            }
-
-            if (typeof A === "string") {
-              return sortState[col] ? A.localeCompare(B) : B.localeCompare(A);
-            }
-
-            return sortState[col] ? A - B : B - A;
-          });
-
-          document.querySelectorAll(".sortable").forEach(x => {
-            x.innerHTML = x.innerHTML.replace("⬆", "⬍").replace("⬇", "⬍");
-          });
-
-          th.innerHTML = th.innerHTML.replace("⬍", sortState[col] ? "⬆" : "⬇");
-
-          renderTable();
+        list.forEach(r => {
+          const date = r.saleDate || r.date || "";
+          const symbol = r.symbol || r.ticker || "";
+          const desc = r.description || "";
+          const cost = safeNum(r.costIls || r.costUsd || r.cost || 0);
+          const proceeds = safeNum(r.proceedsIls || r.proceedsUsd || r.proceeds || 0);
+          const profit = safeNum(r.profitIls || r.profit || r.profitUsd || 0);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${escapeHtml(date)}</td><td>${escapeHtml(symbol)}</td><td>${escapeHtml(desc)}</td><td>₪${fmt(cost)}</td><td>₪${fmt(proceeds)}</td><td class="${profit>=0?'value-positive':'value-negative'}">${profit>=0?'+':''}₪${fmt(profit)}</td>`;
+          tbody.appendChild(tr);
         });
+
+      } catch (err) {
+        console.error("loadRealized error:", err);
+        document.querySelector("#realized-table tbody").innerHTML = `<tr><td colspan="6">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
+      }
+    }
+
+    // כפתור אור/לילה
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
       });
     }
 
-    // מצב כהה/בהיר
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
+    function escapeHtml(s){ if(s===null||s===undefined) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
-    loadData();
+    document.addEventListener("DOMContentLoaded", () => {
+      loadRealized();
+    });
   </script>
-
 </body>
 </html>
