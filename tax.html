@@ -1,83 +1,133 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <title>מס רווחי הון – Show Me The Money</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css">
-  <script src="/loadHeader.js" defer></script>
-
-  <style>
-    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
-    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px; }
-    .table-wrapper { background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow-x:auto; }
-    .theme-btn { position:fixed; left:12px; top:12px; z-index:9999; width:44px; height:44px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
 
-  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
+<body class="theme-tax">
 
-  <div id="site-header"></div>
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
+
+  <!-- סרגל ניווט -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item active"><span class="icon">🧾</span> מס רווחי הון</a>
+    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
+  </nav>
 
   <div class="page">
-    <div class="card">
-      <h1 style="margin:0 0 8px 0">מס רווחי הון</h1>
-      <div class="small">כלים לחישוב מס, סיכום רווחים ממומשים והמלצות להצגה לרואה חשבון</div>
+
+    <div class="page-header">
+      <div>
+        <h1>מס רווחי הון</h1>
+        <div class="page-subtitle">מחשבון מס + סיכום רווחים</div>
+      </div>
+      <div class="page-subtitle">Ofir</div>
     </div>
 
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">חישוב מהיר</h3>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:220px;">
-          <label>רווח ממומש (₪)</label>
-          <input id="tax-profit" type="number" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-top:6px;">
-        </div>
-        <div style="flex:1;min-width:220px;">
-          <label>שיעור מס משוער (%)</label>
-          <input id="tax-rate" type="number" value="25" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-top:6px;">
-        </div>
-        <div style="align-self:end;">
-          <button id="tax-calc" class="refresh-btn" style="margin-top:6px;">חשב מס</button>
-        </div>
-      </div>
+    <!-- מחשבון מס -->
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="margin-bottom:10px;">מחשבון מס מהיר</h3>
 
-      <div style="margin-top:12px;">
-        <strong>מס משוער:</strong> <span id="tax-result">₪0</span>
+      <label>רווח ממומש (₪):</label>
+      <input id="profit-input" type="number" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-bottom:10px;">
+
+      <label>שיעור מס (%):</label>
+      <input id="rate-input" type="number" value="25" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-bottom:10px;">
+
+      <button id="calc-btn" class="refresh-btn">חשב</button>
+
+      <div style="margin-top:15px;font-size:18px;">
+        מס לתשלום: <strong id="tax-result">₪0</strong>
       </div>
     </div>
 
+    <!-- טבלת רווחים ממומשים -->
     <div class="table-wrapper">
-      <h3 style="margin:0 0 8px 0">רווחים ממומשים (דוגמה)</h3>
-      <table id="tax-table">
+      <h3 style="margin-bottom:10px;">רווחים ממומשים</h3>
+
+      <table>
         <thead>
-          <tr><th>שנה</th><th>סימול</th><th>רווח (₪)</th><th>מס משוער (₪)</th></tr>
+          <tr>
+            <th>תאריך</th>
+            <th>סימול</th>
+            <th>רווח (₪)</th>
+            <th>מס (₪)</th>
+          </tr>
         </thead>
-        <tbody>
-          <tr><td colspan="4">אין נתונים להצגה</td></tr>
+
+        <tbody id="tax-table-body">
+          <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
       </table>
     </div>
+
   </div>
 
   <script>
-    // כפתור אור/לילה
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+
+    function fmt(n) {
+      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
+    }
+
+    // מחשבון מס
+    document.getElementById("calc-btn").onclick = () => {
+      const profit = Number(document.getElementById("profit-input").value || 0);
+      const rate = Number(document.getElementById("rate-input").value || 0) / 100;
+
+      const tax = profit * rate;
+      document.getElementById("tax-result").innerText = "₪" + fmt(tax);
+    };
+
+    // טעינת רווחים ממומשים
+    async function loadTaxTable() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const realized = data.realized || [];
+      const tbody = document.getElementById("tax-table-body");
+      tbody.innerHTML = "";
+
+      if (realized.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4">אין נתונים להצגה</td></tr>`;
+        return;
+      }
+
+      realized.forEach(r => {
+        const profit = r.profitIls || r.profit || 0;
+        const tax = profit * 0.25;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.date || r.saleDate || ""}</td>
+          <td>${r.symbol || ""}</td>
+          <td>₪${fmt(profit)}</td>
+          <td>₪${fmt(tax)}</td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
-    function fmt(n){ return Number(n||0).toLocaleString("he-IL",{maximumFractionDigits:2}); }
+    // מצב כהה/בהיר
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
 
-    document.getElementById("tax-calc").addEventListener("click", () => {
-      const profit = Number(document.getElementById("tax-profit").value || 0);
-      const rate = Number(document.getElementById("tax-rate").value || 0) / 100;
-      const tax = profit * rate;
-      document.getElementById("tax-result").innerText = "₪" + fmt(tax);
-    });
+    loadTaxTable();
   </script>
+
 </body>
 </html>
