@@ -5,266 +5,142 @@
   <title>חיסכון לכל ילד – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    :root {
-      --card-bg: #fff;
-      --page-bg: #f5f7fb;
-      --text: #222;
-      --accent: #007AFF;
-    }
-    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--page-bg); color:var(--text); direction:rtl; }
-    nav.top-nav { display:flex; gap:8px; padding:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.06); align-items:center; }
-    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
-
-    table { width:100%; border-collapse:collapse; }
-    table th, table td { text-align:center; padding:10px; border-bottom:1px solid #eee; }
-    .bubble-row { display:flex; gap:15px; margin-bottom:18px; flex-wrap:wrap; }
-    .bubble { flex:1; background:var(--card-bg); padding:16px; border-radius:12px; text-align:center; font-size:16px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.12); min-height:72px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
-    .table-wrapper { overflow-x:auto; background:transparent; padding:8px 0; }
-    .value-positive { color:#0a8a2a; font-weight:600; }
-    .value-negative { color:#e84e89; font-weight:600; }
-    .cards-row { margin-top:20px; display:flex; justify-content:center; }
-    .card { background:var(--card-bg); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.06); width:100%; max-width:640px; box-sizing:border-box; }
-
-    /* הגבלת גובה לגרף */
-    .chart-container { width:100%; max-height:320px; height:320px; position:relative; }
-    canvas { width:100% !important; height:100% !important; display:block; }
-
-    /* כפתור אור/לילה מתוקן: לא יתפרס על כל המסך */
-    #themeToggle {
-      position: fixed;
-      left: 12px;
-      top: 12px;
-      z-index: 9999;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border-radius: 10px;
-      background: var(--card-bg);
-      color: var(--text);
-      border: 1px solid rgba(0,0,0,0.06);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-    }
-
-    /* מצב כהה פשוט */
-    body.dark { background:#0f1720; color:#e6eef8; }
-    body.dark .card, body.dark .bubble, body.dark nav.top-nav { background:#0b1220; color:#e6eef8; box-shadow:none; border:1px solid rgba(255,255,255,0.03); }
-    body.dark #themeToggle { background:#0b1220; color:#fff; border:1px solid rgba(255,255,255,0.06); }
-
-    @media (max-width:640px) {
-      .bubble { font-size:14px; min-height:64px; }
-      table th, table td { font-size:13px; padding:8px; }
-      .chart-container { height:260px; max-height:260px; }
-      #themeToggle { width:40px; height:40px; left:10px; top:10px; }
-    }
-  </style>
 </head>
 
 <body class="theme-kids">
 
-  <button id="themeToggle" aria-label="החלפת מצב אור/לילה">🌙</button>
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
 
+  <!-- סרגל ניווט -->
   <nav class="top-nav">
-    <a href="index.html" class="nav-item">סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item">IBKR</a>
-    <a href="fair.html" class="nav-item">FAIR</a>
-    <a href="banks.html" class="nav-item">בנקים</a>
-    <a href="kids.html" class="nav-item active">חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item">מס רווחי הון</a>
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item active"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
   </nav>
 
   <div class="page">
 
-    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div class="page-header">
       <div>
-        <h1 style="margin:0 0 6px 0">חיסכון לכל ילד</h1>
-        <div class="page-subtitle" id="kids-timestamp" style="color:#666;font-size:13px"></div>
+        <h1>חיסכון לכל ילד</h1>
+        <div class="page-subtitle" id="kids-timestamp"></div>
       </div>
-      <div class="page-subtitle" style="color:#666">Ofir</div>
+      <div class="page-subtitle">Ofir</div>
     </div>
 
-    <div class="bubble-row" style="margin-top:14px;">
-      <div class="bubble" id="kids-total-value-bubble">שווי כולל: ₪0</div>
-      <div class="bubble" id="kids-total-deposits-bubble">הפקדות כוללות: ₪0</div>
-      <div class="bubble" id="kids-count-bubble">מספר ילדים: 0</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-title">שווי כולל (₪)</div>
+        <div class="card-main" id="kids-total">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">רווח/הפסד (₪)</div>
+        <div class="card-main" id="kids-profit">₪0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">מספר חשבונות</div>
+        <div class="card-main" id="kids-count">0</div>
+      </div>
     </div>
 
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;text-align:center;">רשימת ילדים</h2>
+      <h3 style="margin-bottom:10px;">רשימת חשבונות חיסכון</h3>
 
       <table>
         <thead>
           <tr>
-            <th>שם</th>
+            <th>שם הילד</th>
             <th>שווי נוכחי (₪)</th>
-            <th>הפקדה בט"ל (₪)</th>
-            <th>הפקדה הורים (₪)</th>
-            <th>מנהלת (שם החברה)</th>
+            <th>הפקדות (₪)</th>
+            <th>רווח (₪)</th>
           </tr>
         </thead>
 
         <tbody id="kids-table-body">
-          <tr><td colspan="5">טוען נתונים…</td></tr>
+          <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="cards-row">
-      <div class="card">
-        <h3 style="margin:0 0 12px 0; font-size:15px; text-align:center;">התפלגות לפי ילד (שווי נוכחי)</h3>
-        <div class="chart-container">
-          <canvas id="kids-chart"></canvas>
-        </div>
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; text-align:center;">התפלגות לפי ילד</h3>
+        <canvas id="kids-chart" height="80"></canvas>
       </div>
     </div>
 
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function format(n) {
+    function fmt(n) {
       return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
     }
 
-    function getField(obj, ...names) {
-      for (const n of names) {
-        if (obj[n] !== undefined && obj[n] !== null && obj[n] !== "") return obj[n];
-      }
-      return 0;
-    }
-
-    const CHART_COLORS = [
-      "#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89", "#4A90E2",
-      "#F5A623", "#7ED321", "#9B59B6", "#2ECC71", "#E67E22", "#3498DB"
-    ];
-
-    let kidsChartInstance = null;
-
     async function loadKids() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
+      const res = await fetch(API_URL);
+      const data = await res.json();
 
-        const kids = Array.isArray(data.kids) ? data.kids : [];
+      const kids = data.kids || [];
 
-        document.getElementById("kids-timestamp").innerText = new Date().toLocaleString("he-IL");
+      document.getElementById("kids-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
 
-        const totalValue = kids.reduce((s, r) => s + Number(getField(r, "valueIls", "value")), 0);
-        const totalDeposits = kids.reduce((s, r) => {
-          const tel = Number(getField(r, "depositsTel", "deposits", "deposits_tel"));
-          const parents = Number(getField(r, "depositsParents", "depositsParents", "deposits_parents"));
-          return s + tel + parents;
-        }, 0);
+      const total = kids.reduce((s, r) => s + Number(r.value || 0), 0);
+      const deposits = kids.reduce((s, r) => s + Number(r.deposits || 0), 0);
+      const profit = total - deposits;
 
-        document.getElementById("kids-total-value-bubble").innerText = "שווי כולל: ₪" + format(totalValue);
-        document.getElementById("kids-total-deposits-bubble").innerText = "הפקדות כוללות: ₪" + format(totalDeposits);
-        document.getElementById("kids-count-bubble").innerText = "מספר ילדים: " + kids.length;
+      document.getElementById("kids-total").innerText = "₪" + fmt(total);
+      document.getElementById("kids-profit").innerText =
+        (profit >= 0 ? "+" : "") + "₪" + fmt(profit);
+      document.getElementById("kids-count").innerText = kids.length;
 
-        const tbody = document.getElementById("kids-table-body");
-        tbody.innerHTML = "";
+      const tbody = document.getElementById("kids-table-body");
+      tbody.innerHTML = "";
 
-        if (kids.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5">אין נתונים להצגה</td></tr>`;
-        } else {
-          kids.forEach(k => {
-            const name = getField(k, "childName", "name") || "—";
-            const value = Number(getField(k, "valueIls", "value"));
-            const depositsTel = Number(getField(k, "depositsTel", "deposits", "deposits_tel"));
-            const depositsParents = Number(getField(k, "depositsParents", "depositsParents", "deposits_parents"));
-            const manager = getField(k, "manager", "provider", "company") || "—";
+      kids.forEach(k => {
+        const p = Number(k.value || 0) - Number(k.deposits || 0);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${k.name || "—"}</td>
+          <td>₪${fmt(k.value)}</td>
+          <td>₪${fmt(k.deposits)}</td>
+          <td class="${p >= 0 ? 'value-positive' : 'value-negative'}">
+            ${(p >= 0 ? '+' : '')}₪${fmt(p)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
 
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${escapeHtml(name)}</td>
-              <td>₪${format(value)}</td>
-              <td>₪${format(depositsTel)}</td>
-              <td>₪${format(depositsParents)}</td>
-              <td>${escapeHtml(manager)}</td>
-            `;
-            tbody.appendChild(tr);
-          });
+      new Chart(document.getElementById("kids-chart"), {
+        type: "pie",
+        data: {
+          labels: kids.map(k => k.name),
+          datasets: [{
+            data: kids.map(k => k.value),
+            backgroundColor: ["#6A4FF7", "#0A8A2A", "#00A8A8", "#FF8A3D", "#E84E89"]
+          }]
         }
-
-        const ctx = document.getElementById("kids-chart");
-        if (ctx) {
-          if (kidsChartInstance) {
-            try { kidsChartInstance.destroy(); } catch (e) { /* ignore */ }
-            kidsChartInstance = null;
-          }
-
-          const MAX_SLICES = 12;
-          const labelsAll = kids.map(k => getField(k, "childName", "name") || "—");
-          const valuesAll = kids.map(k => Number(getField(k, "valueIls", "value")));
-
-          let labels = labelsAll.slice();
-          let values = valuesAll.slice();
-
-          if (labels.length > MAX_SLICES) {
-            const pairs = labels.map((lab, i) => ({ lab, val: values[i] }));
-            pairs.sort((a,b) => b.val - a.val);
-            const top = pairs.slice(0, MAX_SLICES - 1);
-            const others = pairs.slice(MAX_SLICES - 1);
-            labels = top.map(p => p.lab);
-            values = top.map(p => p.val);
-            const othersSum = others.reduce((s,p) => s + p.val, 0);
-            labels.push("אחרים");
-            values.push(othersSum);
-          }
-
-          kidsChartInstance = new Chart(ctx, {
-            type: "pie",
-            data: {
-              labels,
-              datasets: [{
-                data: values,
-                backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length])
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { position: "bottom", labels: { boxWidth:12, padding:8 } },
-                tooltip: { callbacks: { label: ctx => {
-                  const v = ctx.raw || 0;
-                  return `${ctx.label}: ₪${format(v)}`;
-                }}}
-              },
-              layout: { padding: { top: 6, bottom: 6 } }
-            }
-          });
-        }
-
-      } catch (err) {
-        console.error("LoadKids error:", err);
-        const tbody = document.getElementById("kids-table-body");
-        tbody.innerHTML = `<tr><td colspan="5">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
-      }
-    }
-
-    // כפתור אור/לילה: הגדרה בטוחה של האלמנט והאירוע
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
       });
     }
 
-    function escapeHtml(s) {
-      if (s === null || s === undefined) return "";
-      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-    }
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
 
-    // טעינה ראשונית
     loadKids();
   </script>
 
