@@ -4,24 +4,52 @@
   <meta charset="UTF-8">
   <title>מס רווחי הון – Show Me The Money</title>
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    table th, table td {
+      text-align: center;
+    }
+
+    .bubble-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .bubble {
+      flex: 1;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90px;
+    }
+
+    .bubble-profit { color: #0A8A2A; }   /* ירוק */
+    .bubble-tax { color: #D7263D; }      /* אדום */
+    .bubble-net { color: #1E6BFF; }      /* כחול */
+  </style>
 </head>
 
 <body class="theme-tax">
 
-  <!-- מצב כהה/בהיר -->
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- סרגל ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
     <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
     <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
     <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
     <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
     <a href="tax.html" class="nav-item active"><span class="icon">🧾</span> מס רווחי הון</a>
-    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
   </nav>
 
   <div class="page">
@@ -29,45 +57,41 @@
     <div class="page-header">
       <div>
         <h1>מס רווחי הון</h1>
-        <div class="page-subtitle">מחשבון מס + סיכום רווחים</div>
+        <div class="page-subtitle" id="tax-timestamp"></div>
       </div>
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- מחשבון מס -->
-    <div class="card" style="margin-bottom:20px;">
-      <h3 style="margin-bottom:10px;">מחשבון מס מהיר</h3>
-
-      <label>רווח ממומש (₪):</label>
-      <input id="profit-input" type="number" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-bottom:10px;">
-
-      <label>שיעור מס (%):</label>
-      <input id="rate-input" type="number" value="25" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;margin-bottom:10px;">
-
-      <button id="calc-btn" class="refresh-btn">חשב</button>
-
-      <div style="margin-top:15px;font-size:18px;">
-        מס לתשלום: <strong id="tax-result">₪0</strong>
-      </div>
+    <!-- שלוש בועות ממורכזות וצבועות -->
+    <div class="bubble-row">
+      <div class="bubble bubble-profit" id="bubble-profit">רווח כולל: ₪0</div>
+      <div class="bubble bubble-tax" id="bubble-tax">מס 25%: ₪0</div>
+      <div class="bubble bubble-net" id="bubble-net">נטו לאחר מס: ₪0</div>
     </div>
 
-    <!-- טבלת רווחים ממומשים -->
+    <!-- טבלה -->
     <div class="table-wrapper">
-      <h3 style="margin-bottom:10px;">רווחים ממומשים</h3>
+      <h2 style="font-size:16px;margin-bottom:10px; text-align:center;">רשימת רווחים לא ממומשים</h2>
 
       <table>
         <thead>
           <tr>
-            <th>תאריך</th>
-            <th>סימול</th>
-            <th>רווח (₪)</th>
-            <th>מס (₪)</th>
+            <th>שם הקרן</th>
+            <th>רווח לא ממומש (₪)</th>
+            <th>מס 25% (₪)</th>
           </tr>
         </thead>
 
         <tbody id="tax-table-body">
-          <tr><td colspan="4">טוען נתונים…</td></tr>
+          <tr><td colspan="3">טוען נתונים…</td></tr>
         </tbody>
+
+        <tfoot>
+          <tr id="tax-summary-row">
+            <td colspan="3">טוען סיכום…</td>
+          </tr>
+        </tfoot>
+
       </table>
     </div>
 
@@ -77,56 +101,74 @@
     const API_URL =
       "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function fmt(n) {
-      return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
-    }
-
-    // מחשבון מס
-    document.getElementById("calc-btn").onclick = () => {
-      const profit = Number(document.getElementById("profit-input").value || 0);
-      const rate = Number(document.getElementById("rate-input").value || 0) / 100;
-
-      const tax = profit * rate;
-      document.getElementById("tax-result").innerText = "₪" + fmt(tax);
-    };
-
-    // טעינת רווחים ממומשים
-    async function loadTaxTable() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-
-      const realized = data.realized || [];
-      const tbody = document.getElementById("tax-table-body");
-      tbody.innerHTML = "";
-
-      if (realized.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4">אין נתונים להצגה</td></tr>`;
-        return;
-      }
-
-      realized.forEach(r => {
-        const profit = r.profitIls || r.profit || 0;
-        const tax = profit * 0.25;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.date || r.saleDate || ""}</td>
-          <td>${r.symbol || ""}</td>
-          <td>₪${fmt(profit)}</td>
-          <td>₪${fmt(tax)}</td>
-        `;
-        tbody.appendChild(tr);
+    function format(n) {
+      return Number(n || 0).toLocaleString("he-IL", {
+        maximumFractionDigits: 2
       });
     }
 
-    // מצב כהה/בהיר
+    async function loadTax() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      const fair = data.fair || [];
+
+      document.getElementById("tax-timestamp").innerText =
+        new Date().toLocaleString("he-IL");
+
+      const tbody = document.getElementById("tax-table-body");
+      const summaryRow = document.getElementById("tax-summary-row");
+
+      tbody.innerHTML = "";
+
+      let totalProfit = 0;
+      let totalTax = 0;
+
+      fair.forEach(f => {
+        const profit = Number(f["רווח/הפסד (₪)"] || 0);
+        const tax = profit * 0.25;
+
+        totalProfit += profit;
+        totalTax += tax;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${f["שם הקרן"]}</td>
+          <td>₪${format(profit)}</td>
+          <td>₪${format(tax)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const net = totalProfit - totalTax;
+
+      // בועות
+      document.getElementById("bubble-profit").innerText =
+        "רווח כולל: ₪" + format(totalProfit);
+
+      document.getElementById("bubble-tax").innerText =
+        "מס 25%: ₪" + format(totalTax);
+
+      document.getElementById("bubble-net").innerText =
+        "נטו לאחר מס: ₪" + format(net);
+
+      // שורה תחתונה בטבלה
+      summaryRow.innerHTML = `
+        <td colspan="3" style="font-weight:bold;">
+          רווח כולל: ₪${format(totalProfit)} ·
+          מס: ₪${format(totalTax)} ·
+          נטו: ₪${format(net)}
+        </td>
+      `;
+    }
+
     document.getElementById("themeToggle").onclick = () => {
       document.body.classList.toggle("dark");
       themeToggle.textContent =
         document.body.classList.contains("dark") ? "☀️" : "🌙";
     };
 
-    loadTaxTable();
+    loadTax();
   </script>
 
 </body>
