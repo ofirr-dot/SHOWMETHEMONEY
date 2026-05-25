@@ -52,7 +52,6 @@
     .usd-rate { font-size: 16px; margin-bottom:6px; color:#333; }
     .usd-note { font-size:12px; color:#666; }
 
-    /* מכולת גרף מוגבלת בגובה כדי למנוע "משיכה" של הדף */
     .chart-container {
       width: 100%;
       max-width: 420px;
@@ -71,13 +70,24 @@
 
 <body class="theme-banks">
 
-  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
+  <!-- מצב כהה/בהיר -->
+  <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <div id="site-header"></div>
+  <!-- סרגל ניווט -->
+  <nav class="top-nav">
+    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
+    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
+    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
+    <a href="banks.html" class="nav-item active"><span class="icon">🏦</span> בנקים</a>
+    <a href="realized.html" class="nav-item"><span class="icon">💰</span> רווח ממומש</a>
+    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
+    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
+    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
+    <a href="admin.html" class="nav-item"><span class="icon">⚙️</span> ניהול נתונים</a>
+  </nav>
 
   <div class="page">
 
-    <!-- שלוש בועות ממורכזות -->
     <div class="bubble-row">
       <div class="bubble" id="bubble-total-ils">שווי כולל: ₪0</div>
       <div class="bubble" id="bubble-accounts">חשבונות: 0</div>
@@ -96,9 +106,8 @@
       <div class="page-subtitle">Ofir</div>
     </div>
 
-    <!-- טבלה -->
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">רשימת חשבונות בנק</h2>
+      <h3 style="font-size:16px;margin-bottom:10px;">רשימת חשבונות בנק</h3>
 
       <table>
         <thead>
@@ -113,14 +122,12 @@
         <tbody id="banks-table-body">
           <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
-
       </table>
     </div>
 
-    <!-- גרף עוגה (בתוך מכולה עם גובה קבוע) -->
-    <div class="cards-row" style="margin-top:18px;">
-      <div class="card" style="padding:20px; max-width:420px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px; text-align:center;">התפלגות לפי בנק</h3>
+    <div class="cards-row">
+      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
         <div class="chart-container">
           <canvas id="banks-chart"></canvas>
         </div>
@@ -130,7 +137,8 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
     let rows = [];
     let sortState = {};
@@ -138,118 +146,64 @@
     let banksChartInstance = null;
 
     function safeNum(v) {
-      if (v === null || v === undefined || v === "") return 0;
-      const n = Number(String(v).replace(/\u00A0/g, "").replace(/,/g, ""));
+      if (!v) return 0;
+      const n = Number(String(v).replace(/,/g, ""));
       return isNaN(n) ? 0 : n;
     }
 
-    function format(n) {
+    function fmt(n) {
       return Number(n || 0).toLocaleString("he-IL", { maximumFractionDigits: 2 });
     }
 
-    // קבלת שער מדויק ממספר מקומות בתשובת ה‑API
-    function extractUsdRate(api) {
-      const candidates = [
-        api?.usdRate,
-        api?.usd_rate,
-        api?.ibkr?.summary?.usdRate,
-        api?.ibkr?.summary?.usd_rate,
-        api?.usd,
-        api?.rate
-      ];
-      for (const c of candidates) {
-        const n = safeNum(c);
-        if (n > 0) return n;
-      }
-      return 0;
-    }
-
     async function loadBanks() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
+      const res = await fetch(API_URL);
+      const data = await res.json();
 
-        // שליפת שער עם fallback
-        usdRate = extractUsdRate(data) || 0;
+      usdRate = data.ibkr?.summary?.usdRate || 3.6;
 
-        // אם אין שער — נסה למצוא fxRate בשורות הבנקים (ממוצע)
-        const banksRaw = Array.isArray(data.banks) ? data.banks : [];
-        if (!usdRate) {
-          const fxList = banksRaw.map(b => safeNum(b.fxRate || b["USD/ILS"] || b.fx || 0)).filter(x => x > 0);
-          if (fxList.length > 0) {
-            usdRate = fxList.reduce((s,v) => s+v,0) / fxList.length;
-          }
-        }
+      rows = (data.banks || []).map(b => {
+        const ils = safeNum(b.valueIls || b["ערך בש״ח"] || 0);
+        const usd = ils / usdRate;
 
-        // אם עדיין אין שער — השתמש בערך סביר כ‑fallback
-        if (!usdRate) usdRate = 3.6;
+        return {
+          bank: b.bank || b["בנק"],
+          type: b.type || b["סוג חשבון"],
+          usd,
+          ils
+        };
+      });
 
-        // בנה שורות להצגה
-        rows = banksRaw.map(b => {
-          const ils = safeNum(b.valueIls || b["שווי בשקלים"] || b["ערך בש״ח"] || b.value || 0);
-          const currency = (b.currency || b.curr || b["מטבע"] || "").toString().trim();
-          const fxRate = safeNum(b.fxRate || b["USD/ILS"] || b.fx || 0);
+      const now = new Date().toLocaleString("he-IL");
+      document.getElementById("banks-timestamp").innerText = now;
 
-          let usd = null;
-          if (currency.toUpperCase() === "USD") {
-            usd = usdRate > 0 ? ils / usdRate : null;
-          } else if (fxRate > 0) {
-            usd = fxRate > 0 ? ils / fxRate : null;
-          } else {
-            usd = null;
-          }
+      const totalIls = rows.reduce((s, r) => s + r.ils, 0);
 
-          return {
-            bank: b.bank || b["מוסד פיננסי"] || b["בנק"] || "—",
-            type: b.type || b["סוג חשבון"] || "",
-            usd,
-            ils,
-            raw: b
-          };
-        }).filter(r => r.ils > 0);
+      document.getElementById("bubble-total-ils").innerText =
+        "שווי כולל: ₪" + fmt(totalIls);
 
-        const now = new Date().toLocaleString("he-IL");
-        document.getElementById("banks-timestamp").innerText = now;
+      document.getElementById("bubble-accounts").innerText =
+        "חשבונות: " + rows.length;
 
-        const totalIls = rows.reduce((s, r) => s + safeNum(r.ils), 0);
-        document.getElementById("bubble-total-ils").innerText = "שווי כולל: ₪" + format(totalIls);
-        document.getElementById("bubble-accounts").innerText = "חשבונות: " + rows.length;
+      document.getElementById("bubble-usd").innerHTML =
+        `USD: ${fmt(usdRate)}<br><small>${now}</small><br>
+         <button class="refresh-btn" id="usd-refresh">רענן</button>`;
 
-        // הצגת שער ברור
-        document.getElementById("usd-rate-text").innerText = `1 USD = ₪${format(usdRate)}`;
-        document.getElementById("usd-rate-note").innerText = `מקור: API; עדכון: ${now}`;
-
-        renderTable();
-        enableSorting();
-        renderChart();
-      } catch (err) {
-        console.error("loadBanks error:", err);
-        document.getElementById("banks-table-body").innerHTML = `<tr><td colspan="4">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
-      }
+      renderTable();
+      enableSorting();
+      renderChart();
     }
-
-    // רענון שער בלבד (מזמין את ה‑API מחדש)
-    document.addEventListener("DOMContentLoaded", () => {
-      const usdRefreshBtn = document.getElementById("usd-refresh");
-      if (usdRefreshBtn) usdRefreshBtn.addEventListener("click", () => loadBanks());
-    });
 
     function renderTable() {
       const tbody = document.getElementById("banks-table-body");
       tbody.innerHTML = "";
 
-      if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4">אין חשבונות להצגה</td></tr>`;
-        return;
-      }
-
       rows.forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${escapeHtml(r.bank)}</td>
-          <td>${escapeHtml(r.type)}</td>
-          <td>${r.usd !== null ? "$" + format(r.usd) : "—"}</td>
-          <td>₪${format(r.ils)}</td>
+          <td>${r.bank}</td>
+          <td>${r.type}</td>
+          <td>$${fmt(r.usd)}</td>
+          <td>₪${fmt(r.ils)}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -257,92 +211,51 @@
 
     function enableSorting() {
       document.querySelectorAll("th.sortable").forEach(th => {
-        th.onclick = () => {
+        th.addEventListener("click", () => {
           const col = th.dataset.col;
           sortState[col] = !sortState[col];
 
           rows.sort((a, b) => {
-            const A = a[col] ?? 0;
-            const B = b[col] ?? 0;
-
-            if (typeof A === "string") {
-              return sortState[col] ? A.localeCompare(B) : B.localeCompare(A);
-            }
+            const A = a[col];
+            const B = b[col];
             return sortState[col] ? A - B : B - A;
           });
 
-          document.querySelectorAll("th.sortable").forEach(x => {
-            x.innerHTML = x.innerHTML.replace("⬆", "⬍").replace("⬇", "⬍");
-          });
-
-          th.innerHTML = th.innerHTML.replace("⬍", sortState[col] ? "⬆" : "⬇");
           renderTable();
-        };
+        });
       });
     }
 
     function renderChart() {
       const ctx = document.getElementById("banks-chart");
-      if (!ctx) return;
 
-      // השמדת מופע קודם אם קיים
-      if (banksChartInstance) {
-        try { banksChartInstance.destroy(); } catch (e) { /* ignore */ }
-        banksChartInstance = null;
-      }
-
-      // הגבל מספר פריטים בגרף כדי לשמור על קריאות
-      const MAX_SLICES = 12;
-      const labelsAll = rows.map(r => r.bank || "—");
-      const valuesAll = rows.map(r => safeNum(r.ils));
-
-      let labels = labelsAll.slice();
-      let values = valuesAll.slice();
-
-      if (labels.length > MAX_SLICES) {
-        const pairs = labels.map((lab, i) => ({ lab, val: values[i] }));
-        pairs.sort((a,b) => b.val - a.val);
-        const top = pairs.slice(0, MAX_SLICES - 1);
-        const others = pairs.slice(MAX_SLICES - 1);
-        labels = top.map(p => p.lab);
-        values = top.map(p => p.val);
-        const othersSum = others.reduce((s,p) => s + p.val, 0);
-        labels.push("אחרים");
-        values.push(othersSum);
-      }
+      if (banksChartInstance) banksChartInstance.destroy();
 
       banksChartInstance = new Chart(ctx, {
         type: "pie",
         data: {
-          labels,
+          labels: rows.map(r => r.bank),
           datasets: [{
-            data: values,
-            backgroundColor: labels.map((_, i) => ["#6A4FF7","#0A8A2A","#00A8A8","#FF8A3D","#E84E89","#4A90E2","#F5A623","#7ED321","#9B59B6","#2ECC71","#E67E22","#3498DB"][i % 12])
+            data: rows.map(r => r.ils),
+            backgroundColor: [
+              "#6A4FF7", "#0A8A2A", "#00A8A8",
+              "#FF8A3D", "#E84E89", "#4A90E2"
+            ]
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: "bottom" } }
+          plugins: { legend: { position: "bottom" } },
+          maintainAspectRatio: false
         }
       });
     }
 
-    // כפתור אור/לילה
-    const themeToggleBtn = document.getElementById("themeToggle");
-    if (themeToggleBtn) {
-      themeToggleBtn.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        themeToggleBtn.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
-      });
-    }
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("dark");
+      themeToggle.textContent =
+        document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
 
-    function escapeHtml(s) {
-      if (s === null || s === undefined) return "";
-      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-    }
-
-    // טעינה ראשונית
     loadBanks();
   </script>
 
