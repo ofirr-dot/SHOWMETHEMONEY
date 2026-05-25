@@ -51,12 +51,27 @@
 
     .usd-rate { font-size: 16px; margin-bottom:6px; color:#333; }
     .usd-note { font-size:12px; color:#666; }
+
+    /* מכולת גרף מוגבלת בגובה כדי למנוע "משיכה" של הדף */
+    .chart-container {
+      width: 100%;
+      max-width: 420px;
+      max-height: 320px;
+      height: 320px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
   </style>
 </head>
 
 <body class="theme-banks">
 
-  <button id="themeToggle" class="theme-btn">🌙</button>
+  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
 
   <div id="site-header"></div>
 
@@ -102,11 +117,13 @@
       </table>
     </div>
 
-    <!-- גרף עוגה -->
-    <div class="cards-row">
-      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
-        <canvas id="banks-chart" height="80"></canvas>
+    <!-- גרף עוגה (בתוך מכולה עם גובה קבוע) -->
+    <div class="cards-row" style="margin-top:18px;">
+      <div class="card" style="padding:20px; max-width:420px; margin:auto;">
+        <h3 style="margin-bottom:10px; font-size:15px; text-align:center;">התפלגות לפי בנק</h3>
+        <div class="chart-container">
+          <canvas id="banks-chart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -118,6 +135,7 @@
     let rows = [];
     let sortState = {};
     let usdRate = 0;
+    let banksChartInstance = null;
 
     function safeNum(v) {
       if (v === null || v === undefined || v === "") return 0;
@@ -131,13 +149,12 @@
 
     // קבלת שער מדויק ממספר מקומות בתשובת ה‑API
     function extractUsdRate(api) {
-      // בדוק שדות נפוצים בסדר עדיפות
       const candidates = [
         api?.usdRate,
         api?.usd_rate,
         api?.ibkr?.summary?.usdRate,
         api?.ibkr?.summary?.usd_rate,
-        api?.usd, // אם יש
+        api?.usd,
         api?.rate
       ];
       for (const c of candidates) {
@@ -160,7 +177,6 @@
         if (!usdRate) {
           const fxList = banksRaw.map(b => safeNum(b.fxRate || b["USD/ILS"] || b.fx || 0)).filter(x => x > 0);
           if (fxList.length > 0) {
-            // ממוצע משוקלל פשוט
             usdRate = fxList.reduce((s,v) => s+v,0) / fxList.length;
           }
         }
@@ -174,17 +190,12 @@
           const currency = (b.currency || b.curr || b["מטבע"] || "").toString().trim();
           const fxRate = safeNum(b.fxRate || b["USD/ILS"] || b.fx || 0);
 
-          // החלטה האם לחשב USD:
-          // אם יש שדה currency שמציין USD, או יש fxRate חיובי — נחשב
           let usd = null;
           if (currency.toUpperCase() === "USD") {
-            // אם יש ערךILS ונרצה להציג USD: USD = ILS / usdRate
             usd = usdRate > 0 ? ils / usdRate : null;
           } else if (fxRate > 0) {
-            // אם יש fxRate ספציפי לשורה — המרה לפי fxRate
             usd = fxRate > 0 ? ils / fxRate : null;
           } else {
-            // לא ברור שמדובר בדולר — השאר null
             usd = null;
           }
 
@@ -218,9 +229,9 @@
     }
 
     // רענון שער בלבד (מזמין את ה‑API מחדש)
-    document.getElementById("usd-refresh").addEventListener("click", () => {
-      // קריאה מהירה שמעדכנת רק השער והבועות
-      loadBanks();
+    document.addEventListener("DOMContentLoaded", () => {
+      const usdRefreshBtn = document.getElementById("usd-refresh");
+      if (usdRefreshBtn) usdRefreshBtn.addEventListener("click", () => loadBanks());
     });
 
     function renderTable() {
@@ -273,30 +284,46 @@
     function renderChart() {
       const ctx = document.getElementById("banks-chart");
       if (!ctx) return;
+
       // השמדת מופע קודם אם קיים
-      if (ctx._chartInstance) {
-        try { ctx._chartInstance.destroy(); } catch (e) {}
-        ctx._chartInstance = null;
+      if (banksChartInstance) {
+        try { banksChartInstance.destroy(); } catch (e) { /* ignore */ }
+        banksChartInstance = null;
       }
 
-      const labels = rows.map(r => r.bank);
-      const data = rows.map(r => safeNum(r.ils));
+      // הגבל מספר פריטים בגרף כדי לשמור על קריאות
+      const MAX_SLICES = 12;
+      const labelsAll = rows.map(r => r.bank || "—");
+      const valuesAll = rows.map(r => safeNum(r.ils));
 
-      ctx._chartInstance = new Chart(ctx, {
+      let labels = labelsAll.slice();
+      let values = valuesAll.slice();
+
+      if (labels.length > MAX_SLICES) {
+        const pairs = labels.map((lab, i) => ({ lab, val: values[i] }));
+        pairs.sort((a,b) => b.val - a.val);
+        const top = pairs.slice(0, MAX_SLICES - 1);
+        const others = pairs.slice(MAX_SLICES - 1);
+        labels = top.map(p => p.lab);
+        values = top.map(p => p.val);
+        const othersSum = others.reduce((s,p) => s + p.val, 0);
+        labels.push("אחרים");
+        values.push(othersSum);
+      }
+
+      banksChartInstance = new Chart(ctx, {
         type: "pie",
         data: {
           labels,
           datasets: [{
-            data,
-            backgroundColor: [
-              "#6A4FF7", "#0A8A2A", "#00A8A8",
-              "#FF8A3D", "#E84E89", "#4A90E2"
-            ]
+            data: values,
+            backgroundColor: labels.map((_, i) => ["#6A4FF7","#0A8A2A","#00A8A8","#FF8A3D","#E84E89","#4A90E2","#F5A623","#7ED321","#9B59B6","#2ECC71","#E67E22","#3498DB"][i % 12])
           }]
         },
         options: {
-          plugins: { legend: { position: "bottom" } },
-          maintainAspectRatio: false
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } }
         }
       });
     }
