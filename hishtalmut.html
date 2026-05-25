@@ -1,175 +1,152 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>קרן השתלמות – Show Me The Money</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="/loadHeader.js" defer></script>
 
   <style>
-    table th, table td {
-      text-align: center;
-    }
-
-    .bubble-row {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .bubble {
-      flex: 1;
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 90px;
-    }
+    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
+    .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .cards-row { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:18px; }
+    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+    .table-wrapper { background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    th, td { padding:10px; text-align:center; border-bottom:1px solid #eee; }
+    .theme-btn { position:fixed; left:12px; top:12px; z-index:9999; width:44px; height:44px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; }
   </style>
 </head>
+<body>
 
-<body class="theme-hishtalmut">
+  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
 
-  <button id="themeToggle" class="theme-btn">🌙</button>
-
-  <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item active"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item"><span class="icon">🧾</span> מס רווחי הון</a>
-  </nav>
+  <div id="site-header"></div>
 
   <div class="page">
-
     <div class="page-header">
       <div>
         <h1>קרן השתלמות</h1>
-        <div class="page-subtitle" id="hishtalmut-timestamp"></div>
+        <div class="small" id="hishtalmut-timestamp">טוען...</div>
       </div>
-      <div class="page-subtitle">Ofir</div>
+      <div class="small">Ofir</div>
     </div>
 
-    <!-- שלוש בועות ממורכזות -->
-    <div class="bubble-row">
-      <div class="bubble" id="bubble-value">שווי נוכחי: ₪0</div>
-      <div class="bubble" id="bubble-pl">רווח/הפסד: ₪0</div>
-      <div class="bubble" id="bubble-yield">תשואה: 0%</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-title">שווי נוכחי (₪)</div>
+        <div class="card-main" id="hishtalmut-value">₪0</div>
+        <div class="card-sub small">ניתן לערוך דרך דף בנקים</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">רווח/הפסד (₪)</div>
+        <div class="card-main" id="hishtalmut-profit">₪0</div>
+        <div class="card-sub small">עדכון אחרון: <span id="hishtalmut-last-update">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">הערות</div>
+        <div class="card-main small" id="hishtalmut-notes">—</div>
+      </div>
     </div>
 
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px;">פרטי הקרן</h2>
-
-      <table>
+      <h3 style="margin:0 0 8px 0">פרטי קרן השתלמות</h3>
+      <table id="hishtalmut-table">
         <thead>
           <tr>
-            <th>שם הקרן</th>
-            <th>שווי נוכחי (₪)</th>
+            <th>שם פריט</th>
+            <th>שווי (₪)</th>
             <th>רווח/הפסד (₪)</th>
-            <th>תשואה</th>
+            <th>תאריך עדכון</th>
           </tr>
         </thead>
-
-        <tbody id="hishtalmut-table-body">
+        <tbody>
           <tr><td colspan="4">טוען נתונים…</td></tr>
         </tbody>
-
       </table>
-    </div>
-
-    <!-- גרף עוגה — עכשיו למטה -->
-    <div class="cards-row">
-      <div class="card" style="padding:20px; max-width:350px; margin:auto;">
-        <h3 style="margin-bottom:10px; font-size:15px;">התפלגות</h3>
-        <canvas id="hishtalmut-chart" height="80"></canvas>
-      </div>
     </div>
 
   </div>
 
   <script>
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
-    function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
-      });
-    }
+    function safeNum(v){ if(v===null||v===undefined||v==="") return 0; const n=Number(String(v).replace(/\u00A0/g,"").replace(/,/g,"")); return isNaN(n)?0:n; }
+    function fmt(n){ return Number(n||0).toLocaleString("he-IL",{maximumFractionDigits:2}); }
 
     async function loadHishtalmut() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
 
-      const h = data.hishtalmut || {};
-
-      document.getElementById("hishtalmut-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
-
-      const value = Number(h.value || 0);
-      const pl = Number(h.profit || 0);
-      const yieldPct =
-        value > 0 ? (pl / (value - pl)) * 100 : 0;
-
-      // בועות
-      document.getElementById("bubble-value").innerText =
-        "שווי נוכחי: ₪" + format(value);
-
-      document.getElementById("bubble-pl").innerText =
-        "רווח/הפסד: " + (pl >= 0 ? "+" : "") + "₪" + format(pl);
-
-      document.getElementById("bubble-yield").innerText =
-        "תשואה: " + yieldPct.toFixed(2) + "%";
-
-      // טבלה
-      const tbody = document.getElementById("hishtalmut-table-body");
-      tbody.innerHTML = `
-        <tr>
-          <td>${h.name || "—"}</td>
-          <td>₪${format(value)}</td>
-          <td class="${pl >= 0 ? 'value-positive' : 'value-negative'}">
-            ${pl >= 0 ? '+' : ''}₪${format(pl)}
-          </td>
-          <td>${yieldPct.toFixed(2)}%</td>
-        </tr>
-      `;
-
-      // גרף
-      const ctx = document.getElementById("hishtalmut-chart");
-      if (ctx) {
-        new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: ["שווי נוכחי", "רווח"],
-            datasets: [{
-              data: [value - pl, pl],
-              backgroundColor: ["#6A4FF7", "#0A8A2A"]
-            }]
-          },
-          options: {
-            plugins: { legend: { position: "bottom" } }
+        // ניסיון למצוא קרן השתלמות ברשימת הבנקים או בשדה hishtalmut
+        let hisht = data.hishtalmut || null;
+        if ((!hisht || !hisht.value) && Array.isArray(data.banks)) {
+          const found = data.banks.find(b => (String(b.bank || b["מוסד פיננסי"] || "").toLowerCase().indexOf("השתלמות") !== -1));
+          if (found) {
+            hisht = { value: found.valueIls || found.value || 0, profit: found.profit || 0, notes: found.notes || "" };
           }
-        });
+        }
+
+        if (!hisht) {
+          document.getElementById("hishtalmut-value").innerText = "₪0";
+          document.getElementById("hishtalmut-profit").innerText = "₪0";
+          document.getElementById("hishtalmut-notes").innerText = "אין נתונים";
+          document.querySelector("#hishtalmut-table tbody").innerHTML = `<tr><td colspan="4">אין נתונים להצגה</td></tr>`;
+          document.getElementById("hishtalmut-timestamp").innerText = new Date().toLocaleString("he-IL");
+          return;
+        }
+
+        const value = safeNum(hisht.value || hisht.valueIls || 0);
+        const profit = safeNum(hisht.profit || 0);
+
+        document.getElementById("hishtalmut-value").innerText = "₪" + fmt(value);
+        document.getElementById("hishtalmut-profit").innerText = (profit>=0?"+":"") + "₪" + fmt(profit);
+        document.getElementById("hishtalmut-notes").innerText = hisht.notes || "—";
+        document.getElementById("hishtalmut-last-update").innerText = new Date().toLocaleString("he-IL");
+        document.getElementById("hishtalmut-timestamp").innerText = new Date().toLocaleString("he-IL");
+
+        // טבלה פשוטה — אם יש פירוט בקרן
+        const tbody = document.querySelector("#hishtalmut-table tbody");
+        tbody.innerHTML = "";
+        if (Array.isArray(data.fair) && data.fair.length > 0) {
+          // אם יש רשימת פריטים רלוונטית, הצג אותם
+          data.fair.forEach(item => {
+            const name = item["שם הקרן"] || item.name || "קרן";
+            const val = safeNum(item["שווי נוכחי (₪)"] || item.value || 0);
+            const prof = safeNum(item["רווח/הפסד (₪)"] || item.profit || 0);
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${escapeHtml(name)}</td><td>₪${fmt(val)}</td><td class="${prof>=0?'value-positive':'value-negative'}">${prof>=0?'+':''}₪${fmt(prof)}</td><td>—</td>`;
+            tbody.appendChild(tr);
+          });
+        } else {
+          tbody.innerHTML = `<tr><td>קרן השתלמות</td><td>₪${fmt(value)}</td><td class="${profit>=0?'value-positive':'value-negative'}">${profit>=0?'+':''}₪${fmt(profit)}</td><td>${new Date().toLocaleDateString("he-IL")}</td></tr>`;
+        }
+
+      } catch (err) {
+        console.error("loadHishtalmut error:", err);
+        document.querySelector("#hishtalmut-table tbody").innerHTML = `<tr><td colspan="4">שגיאה בטעינת הנתונים. בדוק את ה‑Console.</td></tr>`;
       }
     }
 
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
+    // כפתור אור/לילה
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      });
+    }
 
-    loadHishtalmut();
+    function escapeHtml(s){ if(s===null||s===undefined) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadHishtalmut();
+    });
   </script>
-
 </body>
 </html>
