@@ -51,6 +51,15 @@
 
     .usd-rate { font-size: 16px; margin-bottom:6px; color:#333; }
     .usd-note { font-size:12px; color:#666; }
+
+    /* ✔️ תיקון הגובה של הגרף */
+    .chart-container {
+      width: 100%;
+      max-width: 350px;
+      height: 260px;
+      margin: auto;
+      position: relative;
+    }
   </style>
 </head>
 
@@ -58,7 +67,7 @@
 
   <button id="themeToggle" class="theme-btn">🌙</button>
 
-  <!-- 🔥 סרגל ניווט חדש בלבד — שום דבר אחר לא השתנה -->
+  <!-- סרגל ניווט -->
   <nav class="top-nav">
     <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
     <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
@@ -73,7 +82,7 @@
 
   <div class="page">
 
-    <!-- שלוש בועות ממורכזות -->
+    <!-- בועות -->
     <div class="bubble-row">
       <div class="bubble" id="bubble-total-ils">שווי כולל: ₪0</div>
       <div class="bubble" id="bubble-accounts">חשבונות: 0</div>
@@ -113,23 +122,19 @@
       </table>
     </div>
 
-    <!-- גרף עוגה -->
+    <!-- גרף עוגה — מתוקן -->
     <div class="cards-row">
       <div class="card" style="padding:20px; max-width:350px; margin:auto;">
         <h3 style="margin-bottom:10px; font-size:15px;">התפלגות לפי בנק</h3>
-        <canvas id="banks-chart" height="80"></canvas>
+        <div class="chart-container">
+          <canvas id="banks-chart"></canvas>
+        </div>
       </div>
     </div>
 
   </div>
 
   <script>
-    /* כל הקוד שלך נשאר בדיוק כמו שהוא */
-    /* לא נגעתי בכלום */
-    /* ... */
-    /* ... */
-    /* ... (הקוד שלך ממשיך כרגיל) */
-
     const API_URL = "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
 
     let rows = [];
