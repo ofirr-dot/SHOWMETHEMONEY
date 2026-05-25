@@ -1,175 +1,83 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>מס רווחי הון – Show Me The Money</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/loadHeader.js" defer></script>
 
   <style>
-    table th, table td {
-      text-align: center;
-    }
-
-    .bubble-row {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .bubble {
-      flex: 1;
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 90px;
-    }
-
-    .bubble-profit { color: #0A8A2A; }   /* ירוק */
-    .bubble-tax { color: #D7263D; }      /* אדום */
-    .bubble-net { color: #1E6BFF; }      /* כחול */
+    .page { max-width:1100px; margin:20px auto; padding:16px; box-sizing:border-box; }
+    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px; }
+    .table-wrapper { background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow-x:auto; }
+    .theme-btn { position:fixed; left:12px; top:12px; z-index:9999; width:44px; height:44px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); background:#fff; cursor:pointer; }
   </style>
 </head>
+<body>
 
-<body class="theme-tax">
+  <button id="themeToggle" class="theme-btn" aria-label="החלפת מצב אור/לילה">🌙</button>
 
-  <button id="themeToggle" class="theme-btn">🌙</button>
-
-  <nav class="top-nav">
-    <a href="index.html" class="nav-item"><span class="icon">🧭</span> סקירה כללית</a>
-    <a href="ibkr.html" class="nav-item"><span class="icon">📈</span> IBKR</a>
-    <a href="fair.html" class="nav-item"><span class="icon">📊</span> FAIR</a>
-    <a href="banks.html" class="nav-item"><span class="icon">🏦</span> בנקים</a>
-    <a href="hishtalmut.html" class="nav-item"><span class="icon">🎓</span> קרן השתלמות</a>
-    <a href="kids.html" class="nav-item"><span class="icon">👶</span> חיסכון לכל ילד</a>
-    <a href="tax.html" class="nav-item active"><span class="icon">🧾</span> מס רווחי הון</a>
-  </nav>
+  <div id="site-header"></div>
 
   <div class="page">
+    <div class="card">
+      <h1 style="margin:0 0 8px 0">מס רווחי הון</h1>
+      <div class="small">כלים לחישוב מס, סיכום רווחים ממומשים והמלצות להצגה לרואה חשבון</div>
+    </div>
 
-    <div class="page-header">
-      <div>
-        <h1>מס רווחי הון</h1>
-        <div class="page-subtitle" id="tax-timestamp"></div>
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">חישוב מהיר</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:220px;">
+          <label>רווח ממומש (₪)</label>
+          <input id="tax-profit" type="number" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-top:6px;">
+        </div>
+        <div style="flex:1;min-width:220px;">
+          <label>שיעור מס משוער (%)</label>
+          <input id="tax-rate" type="number" value="25" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-top:6px;">
+        </div>
+        <div style="align-self:end;">
+          <button id="tax-calc" class="refresh-btn" style="margin-top:6px;">חשב מס</button>
+        </div>
       </div>
-      <div class="page-subtitle">Ofir</div>
+
+      <div style="margin-top:12px;">
+        <strong>מס משוער:</strong> <span id="tax-result">₪0</span>
+      </div>
     </div>
 
-    <!-- שלוש בועות ממורכזות וצבועות -->
-    <div class="bubble-row">
-      <div class="bubble bubble-profit" id="bubble-profit">רווח כולל: ₪0</div>
-      <div class="bubble bubble-tax" id="bubble-tax">מס 25%: ₪0</div>
-      <div class="bubble bubble-net" id="bubble-net">נטו לאחר מס: ₪0</div>
-    </div>
-
-    <!-- טבלה -->
     <div class="table-wrapper">
-      <h2 style="font-size:16px;margin-bottom:10px; text-align:center;">רשימת רווחים לא ממומשים</h2>
-
-      <table>
+      <h3 style="margin:0 0 8px 0">רווחים ממומשים (דוגמה)</h3>
+      <table id="tax-table">
         <thead>
-          <tr>
-            <th>שם הקרן</th>
-            <th>רווח לא ממומש (₪)</th>
-            <th>מס 25% (₪)</th>
-          </tr>
+          <tr><th>שנה</th><th>סימול</th><th>רווח (₪)</th><th>מס משוער (₪)</th></tr>
         </thead>
-
-        <tbody id="tax-table-body">
-          <tr><td colspan="3">טוען נתונים…</td></tr>
+        <tbody>
+          <tr><td colspan="4">אין נתונים להצגה</td></tr>
         </tbody>
-
-        <tfoot>
-          <tr id="tax-summary-row">
-            <td colspan="3">טוען סיכום…</td>
-          </tr>
-        </tfoot>
-
       </table>
     </div>
-
   </div>
 
   <script>
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbz9UwCkg64Och-R4FyjLEhNMrXN2qDOyYn98JnT3qdY66lQBRgBIOH5vV_OAThGRDEksw/exec";
-
-    function format(n) {
-      return Number(n || 0).toLocaleString("he-IL", {
-        maximumFractionDigits: 2
+    // כפתור אור/לילה
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
       });
     }
 
-    async function loadTax() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+    function fmt(n){ return Number(n||0).toLocaleString("he-IL",{maximumFractionDigits:2}); }
 
-      const fair = data.fair || [];
-
-      document.getElementById("tax-timestamp").innerText =
-        new Date().toLocaleString("he-IL");
-
-      const tbody = document.getElementById("tax-table-body");
-      const summaryRow = document.getElementById("tax-summary-row");
-
-      tbody.innerHTML = "";
-
-      let totalProfit = 0;
-      let totalTax = 0;
-
-      fair.forEach(f => {
-        const profit = Number(f["רווח/הפסד (₪)"] || 0);
-        const tax = profit * 0.25;
-
-        totalProfit += profit;
-        totalTax += tax;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${f["שם הקרן"]}</td>
-          <td>₪${format(profit)}</td>
-          <td>₪${format(tax)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const net = totalProfit - totalTax;
-
-      // בועות
-      document.getElementById("bubble-profit").innerText =
-        "רווח כולל: ₪" + format(totalProfit);
-
-      document.getElementById("bubble-tax").innerText =
-        "מס 25%: ₪" + format(totalTax);
-
-      document.getElementById("bubble-net").innerText =
-        "נטו לאחר מס: ₪" + format(net);
-
-      // שורה תחתונה בטבלה
-      summaryRow.innerHTML = `
-        <td colspan="3" style="font-weight:bold;">
-          רווח כולל: ₪${format(totalProfit)} ·
-          מס: ₪${format(totalTax)} ·
-          נטו: ₪${format(net)}
-        </td>
-      `;
-    }
-
-    document.getElementById("themeToggle").onclick = () => {
-      document.body.classList.toggle("dark");
-      themeToggle.textContent =
-        document.body.classList.contains("dark") ? "☀️" : "🌙";
-    };
-
-    loadTax();
+    document.getElementById("tax-calc").addEventListener("click", () => {
+      const profit = Number(document.getElementById("tax-profit").value || 0);
+      const rate = Number(document.getElementById("tax-rate").value || 0) / 100;
+      const tax = profit * rate;
+      document.getElementById("tax-result").innerText = "₪" + fmt(tax);
+    });
   </script>
-
 </body>
 </html>
